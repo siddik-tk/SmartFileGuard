@@ -19,7 +19,6 @@ from typing import Dict, List, Optional, Any
 import threading
 import queue
 from collections import deque 
-import queue  
 
 from config import SystemConfig
 
@@ -38,6 +37,9 @@ try:
     WATCHDOG_AVAILABLE = True
 except ImportError:
     WATCHDOG_AVAILABLE = False
+    # Create dummy classes if watchdog not available
+    class FileSystemEventHandler:
+        pass
 
 
 class ChangeType(Enum):
@@ -121,8 +123,12 @@ class FileSnapshot:
         if not self.hash_sha256:
             return
         
+        # Add nanoseconds and file path for uniqueness
         timestamp_str = self.last_modified.isoformat() if self.last_modified else datetime.now().isoformat()
-        chain_data = f"{self.hash_sha256}{self.previous_snapshot_hash or ''}{timestamp_str}"
+        nano_time = str(time.time_ns())  # Nanoseconds for uniqueness
+        path_salt = str(hash(self.file_path))  # File path as salt
+        
+        chain_data = f"{self.hash_sha256}{self.previous_snapshot_hash or ''}{timestamp_str}{nano_time}{path_salt}"
         self.chain_hash = hashlib.sha256(chain_data.encode()).hexdigest()
     
     def _get_ownership(self):
@@ -186,11 +192,22 @@ class ForensicDatabase:
     
     def __init__(self, db_path: str = SystemConfig.DB_NAME):
         self.db_path = db_path
+        self.connection = None  # Single connection to reuse
         self._init_db()
+        self._setup_backup()
+    
+    def _get_conn(self):
+        """Get or create database connection"""
+        if self.connection is None:
+            self.connection = sqlite3.connect(self.db_path, timeout=30)
+            self.connection.execute('PRAGMA journal_mode=WAL')
+            self.connection.execute('PRAGMA synchronous=NORMAL')
+            self.connection.execute('PRAGMA cache_size=10000')  # Larger cache
+        return self.connection
     
     def _init_db(self):
         """Initialize database schema"""
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_conn()
         cursor = conn.cursor()
         
         # File snapshots table
@@ -211,7 +228,7 @@ class ForensicDatabase:
                 risk_score REAL DEFAULT 0.0,
                 tags TEXT,
                 previous_snapshot_hash TEXT,
-                chain_hash TEXT UNIQUE,
+                chain_hash TEXT,
                 audit_user TEXT,
                 audit_process TEXT,
                 UNIQUE(file_path, snapshot_time)
@@ -276,120 +293,144 @@ class ForensicDatabase:
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_chain_hash ON file_snapshots(chain_hash)')
         
         conn.commit()
-        conn.close()
-        
         logger.info(f"Database initialized: {self.db_path}")
+    
+    def _setup_backup(self):
+        """Setup automatic database backups"""
+        backup_dir = Path("db_backups")
+        backup_dir.mkdir(exist_ok=True)
     
     def save_snapshot(self, snapshot: FileSnapshot, audit_data: Dict = None):
         """Save a file snapshot to database"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        data = snapshot.to_dict()
-        
-        cursor.execute('''
-            INSERT INTO file_snapshots 
-            (file_path, hash_sha256, hash_md5, file_size, permissions, 
-             owner, group_name, last_modified, created_time, content_type, 
-             risk_score, tags, previous_snapshot_hash, chain_hash, 
-             audit_user, audit_process)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            data['path'], data['sha256'], data['md5'], data['size'],
-            data['permissions'], data['owner'], data['group'],
-            data['last_modified'], data['created'], data['content_type'],
-            data['risk_score'], data['tags'], data['previous_snapshot_hash'],
-            data['chain_hash'],
-            audit_data.get('user') if audit_data else None,
-            audit_data.get('process_name') if audit_data else None
-        ))
-        
-        conn.commit()
-        conn.close()
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            
+            data = snapshot.to_dict()
+            
+            cursor.execute('''
+                INSERT INTO file_snapshots 
+                (file_path, hash_sha256, hash_md5, file_size, permissions, 
+                 owner, group_name, last_modified, created_time, content_type, 
+                 risk_score, tags, previous_snapshot_hash, chain_hash, 
+                 audit_user, audit_process)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                data['path'], data['sha256'], data['md5'], data['size'],
+                data['permissions'], data['owner'], data['group'],
+                data['last_modified'], data['created'], data['content_type'],
+                data['risk_score'], data['tags'], data['previous_snapshot_hash'],
+                data['chain_hash'],
+                audit_data.get('user') if audit_data else None,
+                audit_data.get('process_name') if audit_data else None
+            ))
+            
+            conn.commit()
+            
+        except sqlite3.IntegrityError as e:
+            logger.warning(f"Integrity error saving snapshot for {snapshot.file_path}: {e}")
+        except Exception as e:
+            logger.error(f"Error saving snapshot: {e}")
     
     def log_change(self, change_data: Dict):
         """Log a file change event"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            INSERT INTO change_events 
-            (change_type, file_path, old_hash, new_hash, process_name,
-             process_id, user_name, command_line, risk_score, risk_level,
-             audit_user, audit_session_id, audit_event_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (
-            change_data['change_type'],
-            change_data['file_path'],
-            change_data.get('old_hash'),
-            change_data.get('new_hash'),
-            change_data.get('process_name'),
-            change_data.get('process_id'),
-            change_data.get('user_name'),
-            change_data.get('command_line'),
-            change_data.get('risk_score', 0.0),
-            change_data.get('risk_level'),
-            change_data.get('audit_user'),
-            change_data.get('audit_session_id'),
-            change_data.get('audit_event_id')
-        ))
-        
-        change_id = cursor.lastrowid
-        
-        # If high risk, create alert
-        if change_data.get('risk_score', 0.0) >= SystemConfig.RISK_HIGH:
+        try:
+            conn = self._get_conn()
+            cursor = conn.cursor()
+            
             cursor.execute('''
-                INSERT INTO security_alerts 
-                (alert_type, description, severity, file_path, 
-                 process_name, user_name, risk_score)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO change_events 
+                (change_type, file_path, old_hash, new_hash, process_name,
+                 process_id, user_name, command_line, risk_score, risk_level,
+                 audit_user, audit_session_id, audit_event_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                'SUSPICIOUS_FILE_CHANGE',
-                f"{change_data['change_type']} of {os.path.basename(change_data['file_path'])}",
-                'HIGH',
+                change_data['change_type'],
                 change_data['file_path'],
+                change_data.get('old_hash'),
+                change_data.get('new_hash'),
                 change_data.get('process_name'),
+                change_data.get('process_id'),
                 change_data.get('user_name'),
-                change_data.get('risk_score')
+                change_data.get('command_line'),
+                change_data.get('risk_score', 0.0),
+                change_data.get('risk_level'),
+                change_data.get('audit_user'),
+                change_data.get('audit_session_id'),
+                change_data.get('audit_event_id')
             ))
-        
-        conn.commit()
-        conn.close()
-        return change_id
+            
+            change_id = cursor.lastrowid
+            
+            # If high risk, create alert
+            if change_data.get('risk_score', 0.0) >= SystemConfig.RISK_HIGH:
+                cursor.execute('''
+                    INSERT INTO security_alerts 
+                    (alert_type, description, severity, file_path, 
+                     process_name, user_name, risk_score)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    'SUSPICIOUS_FILE_CHANGE',
+                    f"{change_data['change_type']} of {os.path.basename(change_data['file_path'])}",
+                    'HIGH',
+                    change_data['file_path'],
+                    change_data.get('process_name'),
+                    change_data.get('user_name'),
+                    change_data.get('risk_score')
+                ))
+            
+            conn.commit()
+            return change_id
+            
+        except Exception as e:
+            logger.error(f"Error logging change: {e}")
+            return None
     
     def get_recent_alerts(self, limit: int = 20) -> List[Dict]:
         """Get recent security alerts"""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT * FROM security_alerts 
-            WHERE resolved = 0
-            ORDER BY alert_time DESC 
-            LIMIT ?
-        ''', (limit,))
-        
-        rows = cursor.fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
+        try:
+            conn = self._get_conn()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT * FROM security_alerts 
+                WHERE resolved = 0
+                ORDER BY alert_time DESC 
+                LIMIT ?
+            ''', (limit,))
+            
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Error getting alerts: {e}")
+            return []
     
     def get_file_history(self, file_path: str) -> List[Dict]:
         """Get change history for a file"""
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT * FROM change_events 
-            WHERE file_path = ? 
-            ORDER BY event_time DESC 
-            LIMIT 20
-        ''', (file_path,))
-        
-        rows = cursor.fetchall()
-        conn.close()
-        return [dict(row) for row in rows]
+        try:
+            conn = self._get_conn()
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT * FROM change_events 
+                WHERE file_path = ? 
+                ORDER BY event_time DESC 
+                LIMIT 20
+            ''', (file_path,))
+            
+            rows = cursor.fetchall()
+            return [dict(row) for row in rows]
+        except Exception as e:
+            logger.error(f"Error getting file history: {e}")
+            return []
+    
+    def close(self):
+        """Close database connection"""
+        if self.connection:
+            self.connection.close()
+            self.connection = None
 
 
 class FileMonitor:
@@ -473,26 +514,30 @@ class FileMonitor:
             self.scan_file(path, audit_data)
             return
         
-        for root, dirs, files in os.walk(path):
-            # Skip excluded directories
-            dirs[:] = [d for d in dirs if not self._should_exclude(os.path.join(root, d))]
-            
-            for file in files:
-                file_path = os.path.join(root, file)
-                self.scan_file(file_path, audit_data)
-            
-            if not recursive:
-                break
+        try:
+            for root, dirs, files in os.walk(path):
+                # Skip excluded directories
+                dirs[:] = [d for d in dirs if not self._should_exclude(os.path.join(root, d))]
+                
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    self.scan_file(file_path, audit_data)
+                
+                if not recursive:
+                    break
+        except Exception as e:
+            logger.error(f"Error scanning path {path}: {e}")
     
     def verify_hash_chains(self) -> Dict[str, int]:
         """Verify integrity of hash chains"""
         results = {'verified': 0, 'tampered': 0, 'errors': 0}
         
-        conn = sqlite3.connect(self.db.db_path)
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        
+        conn = None
         try:
+            conn = sqlite3.connect(self.db.db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
             cursor.execute('''
                 SELECT file_path, chain_hash, previous_snapshot_hash
                 FROM file_snapshots 
@@ -525,56 +570,68 @@ class FileMonitor:
             logger.error(f"Hash chain verification failed: {e}")
             results['errors'] += 1
         finally:
-            conn.close()
+            if conn:
+                conn.close()
         
         return results
 
 
-# Real-time monitoring (if watchdog available)
-if WATCHDOG_AVAILABLE:
-    class RealTimeHandler(FileSystemEventHandler):
-        """Handles real-time file system events"""
-        
-        def __init__(self, monitor: FileMonitor, audit_collector):
-            self.monitor = monitor
-            self.audit_collector = audit_collector
-            self.event_queue = queue.Queue()
-            self.processing = True
-            self.thread = threading.Thread(target=self._process_events, daemon=True)
-            self.thread.start()
-        
-        def on_created(self, event):
-            if not event.is_directory:
-                self.event_queue.put(('CREATED', event.src_path))
-        
-        def on_modified(self, event):
-            if not event.is_directory:
-                self.event_queue.put(('MODIFIED', event.src_path))
-        
-        def on_deleted(self, event):
-            if not event.is_directory:
-                self.event_queue.put(('DELETED', event.src_path))
-        
-        def _process_events(self):
-            while self.processing:
-                try:
-                    event_type, file_path = self.event_queue.get(timeout=1.0)
-                    
-                    # Debounce
-                    time.sleep(SystemConfig.REALTIME_EVENT_DELAY)
-                    
-                    # Collect audit data
-                    audit_data = None
-                    if self.audit_collector:
-                        audit_data = self.audit_collector.collect_audit_data(file_path, event_type)
-                    
-                    # Scan the file
+# Real-time monitoring - defined unconditionally
+class RealTimeHandler(FileSystemEventHandler):
+    """Handles real-time file system events"""
+    
+    def __init__(self, monitor: FileMonitor, audit_collector):
+        self.monitor = monitor
+        self.audit_collector = audit_collector
+        self.event_queue = queue.Queue()
+        self.processing = True
+        self.thread = threading.Thread(target=self._process_events, daemon=True)
+        self.thread.start()
+        logger.info("RealTimeHandler initialized")
+    
+    def on_created(self, event):
+        if not event.is_directory:
+            self.event_queue.put(('CREATED', event.src_path))
+    
+    def on_modified(self, event):
+        if not event.is_directory:
+            self.event_queue.put(('MODIFIED', event.src_path))
+    
+    def on_deleted(self, event):
+        if not event.is_directory:
+            self.event_queue.put(('DELETED', event.src_path))
+    
+    def on_moved(self, event):
+        if not event.is_directory:
+            self.event_queue.put(('MOVED', event.src_path, event.dest_path))
+    
+    def _process_events(self):
+        while self.processing:
+            try:
+                event_data = self.event_queue.get(timeout=1.0)
+                
+                if len(event_data) == 2:
+                    event_type, file_path = event_data
+                else:
+                    event_type, file_path, dest_path = event_data
+                
+                # Debounce
+                time.sleep(SystemConfig.REALTIME_EVENT_DELAY)
+                
+                # Collect audit data
+                audit_data = None
+                if self.audit_collector:
+                    audit_data = self.audit_collector.collect_audit_data(file_path, event_type)
+                
+                # Scan the file
+                if os.path.exists(file_path):
                     self.monitor.scan_file(file_path, audit_data)
-                    
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    logger.error(f"Error processing event: {e}")
-        
-        def stop(self):
-            self.processing = False
+                
+            except queue.Empty:
+                continue
+            except Exception as e:
+                logger.error(f"Error processing event: {e}")
+    
+    def stop(self):
+        self.processing = False
+        logger.info("RealTimeHandler stopped")
