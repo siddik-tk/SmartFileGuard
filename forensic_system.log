@@ -1,0 +1,4 @@
+2026-02-19 16:32:55,539 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-19 16:32:55,575 - INFO - Database initialized: file_forensics.db
+2026-02-19 16:32:55,577 - INFO - Audit collector initialized for Windows
+2026-02-19 16:32:55,577 - INFO - System initialized successfully

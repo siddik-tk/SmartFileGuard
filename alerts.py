@@ -11,6 +11,7 @@ import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+from typing import Dict
 
 from config import SystemConfig
 
