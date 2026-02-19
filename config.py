@@ -73,24 +73,40 @@ class SystemConfig:
         system = platform.system()
         
         if system == "Linux":
-            cls.MONITOR_PATHS = ['/etc', '/usr/bin', '/var/log', os.path.expanduser('~')]
-        elif system == "Windows":
             cls.MONITOR_PATHS = [
-                os.environ.get('WINDIR', 'C:\\Windows') + '\\System32',
-                os.path.expanduser('~\\Documents')
+                '/etc/passwd',
+                '/etc/shadow',
+                '/etc/sudoers', 
+                '/etc/ssh/sshd_config',
+                '/etc/crontab',
+                '/etc/hosts', 
+                os.path.expanduser('~/.ssh/authorized_keys')
+            ]
+        elif system == "Windows":
+            windir = os.environ.get('WINDIR', 'C:\\Windows')
+            cls.MONITOR_PATHS = [
+                windir + '\\System32\\config\\SAM',
+                windir + '\\System32\\config\\SYSTEM', 
+                windir + '\\System32\\drivers\\etc\\hosts',
             ]
         elif system == "Darwin":  # macOS
-            cls.MONITOR_PATHS = ['/etc', '/usr/bin', '/Applications', os.path.expanduser('~')]
+            cls.MONITOR_PATHS = [
+                '/etc/passwd',
+                '/etc/sudoers',
+                '/etc/hosts', 
+                '/etc/ssh/sshd_config',
+                os.path.expanduser('~/.ssh/authorized_keys')
+            ]
         else:
             cls.MONITOR_PATHS = ['.']
         
         logger.info(f"Auto-configured for {system}")
         
         # Check email credentials
-        if cls.ALERT_EMAIL and (not cls.EMAIL_SETTINGS['sender_email'] or 
-                                not cls.EMAIL_SETTINGS['sender_password']):
-            logger.warning("Email credentials not found in environment variables")
-            cls.ALERT_EMAIL = False
+        if cls.ALERT_EMAIL:
+            if not cls.EMAIL_SETTINGS['sender_email'] or not cls.EMAIL_SETTINGS['sender_password']:
+                logger.warning("Email credentials not found")
+                cls.ALERT_EMAIL = False
 
 
 # Auto-configure on import

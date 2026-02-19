@@ -8,6 +8,7 @@ import os
 import ssl
 import smtplib
 import logging
+import platform
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
