@@ -1,0 +1,26 @@
+{
+    "monitor_paths": [
+        {
+            "path": "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\secrets.txt",
+            "score": 0.9,
+            "recursive": false,
+            "type": "file"
+        },
+        {
+            "path": "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\user",
+            "score": 0.5,
+            "recursive": true,
+            "type": "folder"
+        },
+        {
+            "path": "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\normal.txt",
+            "score": 0.5,
+            "recursive": false,
+            "type": "file"
+        }
+    ],
+    "risk_scores": {
+        "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\secrets.txt": 0.9,
+        "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\normal.txt": 0.5
+    }
+}

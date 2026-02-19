@@ -24,7 +24,6 @@ from config import SystemConfig
 
 logger = logging.getLogger(__name__)
 
-# Optional imports
 try:
     import psutil
     PSUTIL_AVAILABLE = True
@@ -37,13 +36,11 @@ try:
     WATCHDOG_AVAILABLE = True
 except ImportError:
     WATCHDOG_AVAILABLE = False
-    # Create dummy classes if watchdog not available
     class FileSystemEventHandler:
         pass
 
 
 class ChangeType(Enum):
-    """Types of file changes"""
     CREATED = "CREATED"
     MODIFIED = "MODIFIED"
     DELETED = "DELETED"
@@ -51,7 +48,6 @@ class ChangeType(Enum):
 
 
 class RiskLevel(Enum):
-    """Risk assessment levels"""
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
@@ -59,7 +55,6 @@ class RiskLevel(Enum):
 
 
 class FileSnapshot:
-    """Represents a snapshot of a file at a point in time"""
     
     def __init__(self, file_path: str, previous_hash: str = None):
         self.file_path = os.path.abspath(file_path)
@@ -81,7 +76,6 @@ class FileSnapshot:
         self._calculate_chain_hash()
     
     def _collect_metadata(self):
-        """Collect all metadata about the file"""
         try:
             if not os.path.exists(self.file_path):
                 return
@@ -103,7 +97,6 @@ class FileSnapshot:
             logger.error(f"Error collecting metadata for {self.file_path}: {e}")
     
     def _calculate_hash(self, algorithm: str) -> Optional[str]:
-        """Calculate file hash"""
         try:
             if self.size > SystemConfig.MAX_FILE_SIZE_MB * 1024 * 1024:
                 return None
@@ -119,20 +112,17 @@ class FileSnapshot:
             return None
     
     def _calculate_chain_hash(self):
-        """Calculate hash chain for tamper-proof evidence"""
         if not self.hash_sha256:
             return
         
-        # Add nanoseconds and file path for uniqueness
         timestamp_str = self.last_modified.isoformat() if self.last_modified else datetime.now().isoformat()
-        nano_time = str(time.time_ns())  # Nanoseconds for uniqueness
-        path_salt = str(hash(self.file_path))  # File path as salt
+        nano_time = str(time.time_ns())
+        path_salt = str(hash(self.file_path))
         
         chain_data = f"{self.hash_sha256}{self.previous_snapshot_hash or ''}{timestamp_str}{nano_time}{path_salt}"
         self.chain_hash = hashlib.sha256(chain_data.encode()).hexdigest()
     
     def _get_ownership(self):
-        """Get file owner and group"""
         try:
             if platform.system() == "Windows":
                 self.owner = "Unknown"
@@ -147,7 +137,6 @@ class FileSnapshot:
             self.group = "Unknown"
     
     def _detect_content_type(self):
-        """Detect file content type"""
         try:
             import mimetypes
             mime_type, _ = mimetypes.guess_type(self.file_path)
@@ -156,7 +145,6 @@ class FileSnapshot:
             self.content_type = "unknown"
     
     def _apply_tags(self):
-        """Apply tags based on file properties"""
         for critical in SystemConfig.CRITICAL_FILES:
             if critical in self.file_path:
                 self.tags.append('critical')
@@ -168,7 +156,6 @@ class FileSnapshot:
             self.risk_score = max(self.risk_score, 0.3)
     
     def to_dict(self) -> Dict:
-        """Convert to dictionary for storage"""
         return {
             'path': self.file_path,
             'sha256': self.hash_sha256,
@@ -188,29 +175,25 @@ class FileSnapshot:
 
 
 class ForensicDatabase:
-    """Manages all forensic data storage"""
     
     def __init__(self, db_path: str = SystemConfig.DB_NAME):
         self.db_path = db_path
-        self.connection = None  # Single connection to reuse
+        self.connection = None
         self._init_db()
         self._setup_backup()
     
     def _get_conn(self):
-        """Get or create database connection"""
         if self.connection is None:
             self.connection = sqlite3.connect(self.db_path, timeout=30)
             self.connection.execute('PRAGMA journal_mode=WAL')
             self.connection.execute('PRAGMA synchronous=NORMAL')
-            self.connection.execute('PRAGMA cache_size=10000')  # Larger cache
+            self.connection.execute('PRAGMA cache_size=10000')
         return self.connection
     
     def _init_db(self):
-        """Initialize database schema"""
         conn = self._get_conn()
         cursor = conn.cursor()
         
-        # File snapshots table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS file_snapshots (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -235,7 +218,6 @@ class ForensicDatabase:
             )
         ''')
         
-        # Change events table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS change_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -256,7 +238,6 @@ class ForensicDatabase:
             )
         ''')
         
-        # Security alerts table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS security_alerts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -273,7 +254,6 @@ class ForensicDatabase:
             )
         ''')
         
-        # Audit logs table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS audit_logs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -288,7 +268,6 @@ class ForensicDatabase:
             )
         ''')
         
-        # Create indexes
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_file_path ON file_snapshots(file_path)')
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_chain_hash ON file_snapshots(chain_hash)')
         
@@ -296,12 +275,10 @@ class ForensicDatabase:
         logger.info(f"Database initialized: {self.db_path}")
     
     def _setup_backup(self):
-        """Setup automatic database backups"""
         backup_dir = Path("db_backups")
         backup_dir.mkdir(exist_ok=True)
     
     def save_snapshot(self, snapshot: FileSnapshot, audit_data: Dict = None):
-        """Save a file snapshot to database"""
         try:
             conn = self._get_conn()
             cursor = conn.cursor()
@@ -333,7 +310,6 @@ class ForensicDatabase:
             logger.error(f"Error saving snapshot: {e}")
     
     def log_change(self, change_data: Dict):
-        """Log a file change event"""
         try:
             conn = self._get_conn()
             cursor = conn.cursor()
@@ -362,7 +338,6 @@ class ForensicDatabase:
             
             change_id = cursor.lastrowid
             
-            # If high risk, create alert
             if change_data.get('risk_score', 0.0) >= SystemConfig.RISK_HIGH:
                 cursor.execute('''
                     INSERT INTO security_alerts 
@@ -387,7 +362,6 @@ class ForensicDatabase:
             return None
     
     def get_recent_alerts(self, limit: int = 20) -> List[Dict]:
-        """Get recent security alerts"""
         try:
             conn = self._get_conn()
             conn.row_factory = sqlite3.Row
@@ -407,7 +381,6 @@ class ForensicDatabase:
             return []
     
     def get_file_history(self, file_path: str) -> List[Dict]:
-        """Get change history for a file"""
         try:
             conn = self._get_conn()
             conn.row_factory = sqlite3.Row
@@ -427,38 +400,65 @@ class ForensicDatabase:
             return []
     
     def close(self):
-        """Close database connection"""
         if self.connection:
             self.connection.close()
             self.connection = None
 
 
 class FileMonitor:
-    """Monitors file system for changes"""
     
     def __init__(self, database: ForensicDatabase):
         self.db = database
-        self.file_cache = {}  # path -> hash
+        self.file_cache = {}
         self.running = False
     
     def _should_exclude(self, file_path: str) -> bool:
-        """Check if file should be excluded"""
         import fnmatch
         for pattern in SystemConfig.EXCLUDE_PATTERNS:
             if fnmatch.fnmatch(file_path, pattern):
                 return True
         return False
+
+    def load_user_rules(self):
+        rules_file = 'user_rules.json'
+        if os.path.exists(rules_file):
+            try:
+                with open(rules_file, 'r') as f:
+                    return json.load(f)
+            except:
+                return {'monitor_paths': [], 'risk_scores': {}}
+        return {'monitor_paths': [], 'risk_scores': {}}
+
+    def get_user_risk_score(self, file_path):
+        rules = self.load_user_rules()
+        file_path = os.path.abspath(file_path)
+        
+        if file_path in rules.get('risk_scores', {}):
+            return rules['risk_scores'][file_path]
+        
+        for item in rules.get('monitor_paths', []):
+            if item['type'] == 'folder' and file_path.startswith(item['path']):
+                if not item.get('recursive', False):
+                    if os.path.dirname(file_path) == item['path']:
+                        return item['score']
+                else:
+                    return item['score']
+        
+        return None
     
     def scan_file(self, file_path: str, audit_data: Dict = None) -> Optional[FileSnapshot]:
-        """Scan a single file"""
         if self._should_exclude(file_path):
             return None
         
         try:
-            # Get previous hash for chaining
             previous_hash = self.file_cache.get(file_path)
             
             snapshot = FileSnapshot(file_path, previous_hash)
+            
+            user_risk = self.get_user_risk_score(file_path)
+            if user_risk is not None:
+                snapshot.risk_score = max(snapshot.risk_score, user_risk)
+                snapshot.tags.append('user_defined')
             
             if snapshot.hash_sha256:
                 old_hash = self.file_cache.get(file_path)
@@ -483,10 +483,10 @@ class FileMonitor:
                     self.db.log_change(change_event)
                     self.db.save_snapshot(snapshot, audit_data)
                     
-                    # Update cache
                     self.file_cache[file_path] = snapshot.hash_sha256
                     
-                    logger.info(f"Change detected: {change_type.value} - {file_path}")
+                    risk_info = f" (user risk: {user_risk})" if user_risk else ""
+                    logger.info(f"Change detected: {change_type.value} - {file_path}{risk_info}")
                 
                 return snapshot
                 
@@ -496,7 +496,6 @@ class FileMonitor:
         return None
     
     def _get_risk_level(self, score: float) -> str:
-        """Convert risk score to level"""
         if score >= SystemConfig.RISK_HIGH:
             return "HIGH"
         elif score >= SystemConfig.RISK_MEDIUM:
@@ -505,7 +504,6 @@ class FileMonitor:
             return "LOW"
     
     def scan_path(self, path: str, recursive: bool = True, audit_data: Dict = None):
-        """Scan a directory path"""
         if not os.path.exists(path):
             logger.warning(f"Path does not exist: {path}")
             return
@@ -516,7 +514,6 @@ class FileMonitor:
         
         try:
             for root, dirs, files in os.walk(path):
-                # Skip excluded directories
                 dirs[:] = [d for d in dirs if not self._should_exclude(os.path.join(root, d))]
                 
                 for file in files:
@@ -529,7 +526,6 @@ class FileMonitor:
             logger.error(f"Error scanning path {path}: {e}")
     
     def verify_hash_chains(self) -> Dict[str, int]:
-        """Verify integrity of hash chains"""
         results = {'verified': 0, 'tampered': 0, 'errors': 0}
         
         conn = None
@@ -576,9 +572,7 @@ class FileMonitor:
         return results
 
 
-# Real-time monitoring - defined unconditionally
 class RealTimeHandler(FileSystemEventHandler):
-    """Handles real-time file system events"""
     
     def __init__(self, monitor: FileMonitor, audit_collector):
         self.monitor = monitor
@@ -615,15 +609,12 @@ class RealTimeHandler(FileSystemEventHandler):
                 else:
                     event_type, file_path, dest_path = event_data
                 
-                # Debounce
                 time.sleep(SystemConfig.REALTIME_EVENT_DELAY)
                 
-                # Collect audit data
                 audit_data = None
                 if self.audit_collector:
                     audit_data = self.audit_collector.collect_audit_data(file_path, event_type)
                 
-                # Scan the file
                 if os.path.exists(file_path):
                     self.monitor.scan_file(file_path, audit_data)
                 
