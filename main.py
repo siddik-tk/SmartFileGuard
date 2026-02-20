@@ -17,6 +17,7 @@ from config import SystemConfig
 from core import ForensicDatabase, FileMonitor, RealTimeHandler
 from collectors import AuditDataCollector
 from alerts import EmailAlertSystem
+from reporting import ReportGenerator  # NEW IMPORT
 
 # Configure logging
 logging.basicConfig(
@@ -53,6 +54,7 @@ class SmartFileGuard:
         self.audit_collector = AuditDataCollector()
         self.file_monitor = FileMonitor(self.db)
         self.email_alert = EmailAlertSystem()
+        self.report_gen = ReportGenerator(self.db)  # NEW
         
         # Real-time monitoring
         self.observer = None
@@ -280,7 +282,7 @@ class SmartFileGuard:
                     self.observer.schedule(self.handler, path, recursive=True)
                     logger.info(f"Watching system path: {path}")
             
-            # 🔥 NEW: Also monitor user-defined custom paths
+            # Monitor user-defined custom paths
             rules = self.file_monitor.load_user_rules()
             for item in rules.get('monitor_paths', []):
                 custom_path = item['path']
@@ -358,8 +360,255 @@ class SmartFileGuard:
         print(f"Email Alerts: {'ENABLED' if SystemConfig.ALERT_EMAIL else 'DISABLED'}")
         print('-' * 60)
     
-    def interactive_menu(self):
+    # ==================== NEW REPORTING METHODS ====================
+    
+    def generate_report_menu(self):
+        """Interactive menu for generating reports"""
+        while True:
+            print(f"\n{' REPORT GENERATION ':-^60}")
+            print("1. Generate Alerts Report")
+            print("2. Generate File History Report")
+            print("3. Generate System Status Report")
+            print("4. Generate Hash Verification Report")
+            print("5. View Generated Reports")
+            print("6. Delete Report")
+            print("7. Back to Main Menu")
+            print("-" * 60)
+            
+            choice = input("\nSelect option (1-7): ").strip()
+            
+            if choice == '1':
+                self._generate_alerts_report_interactive()
+                input("\nPress Enter to continue...")
+            elif choice == '2':
+                self._generate_file_history_report_interactive()
+                input("\nPress Enter to continue...")
+            elif choice == '3':
+                self._generate_system_status_report_interactive()
+                input("\nPress Enter to continue...")
+            elif choice == '4':
+                self._generate_hash_verification_report_interactive()
+                input("\nPress Enter to continue...")
+            elif choice == '5':
+                self._view_reports()
+                input("\nPress Enter to continue...")
+            elif choice == '6':
+                self._delete_report()
+                input("\nPress Enter to continue...")
+            elif choice == '7':
+                break
+            else:
+                print("Invalid choice")
+
+    def _generate_alerts_report_interactive(self):
+        """Interactive alerts report generation"""
+        print(f"\n{' GENERATE ALERTS REPORT ':-^60}")
         
+        # Get date filters
+        use_date_filter = input("Filter by date? (y/N): ").strip().lower() == 'y'
+        start_date = None
+        end_date = None
+        
+        if use_date_filter:
+            start_date = input("Start date (YYYY-MM-DD) [optional]: ").strip()
+            end_date = input("End date (YYYY-MM-DD) [optional]: ").strip()
+        
+        # Get format
+        print("\nSelect format:")
+        print("1. CSV")
+        print("2. JSON")
+        print("3. PDF")
+        format_choice = input("Choice (1-3): ").strip()
+        
+        format_map = {'1': 'csv', '2': 'json', '3': 'pdf'}
+        if format_choice not in format_map:
+            print("❌ Invalid format choice")
+            return
+        
+        report_format = format_map[format_choice]
+        
+        # Generate report
+        print("\nGenerating report...")
+        try:
+            result = self.report_gen.generate_report(
+                report_type='alerts',
+                format=report_format,
+                start_date=start_date,
+                end_date=end_date
+            )
+            
+            print(f"\n✅ Report generated successfully!")
+            print(f"   File: {result['filename']}")
+            print(f"   Path: {result['filepath']}")
+            print(f"   Records: {result['record_count']}")
+        except Exception as e:
+            print(f"❌ Error generating report: {e}")
+
+    def _generate_file_history_report_interactive(self):
+        """Interactive file history report generation"""
+        print(f"\n{' GENERATE FILE HISTORY REPORT ':-^60}")
+        
+        # Get file path
+        file_path = input("Enter specific file path (or press Enter for all files): ").strip()
+        if file_path and not os.path.exists(file_path):
+            print("❌ File not found")
+            return
+        
+        # Get date filters
+        use_date_filter = input("Filter by date? (y/N): ").strip().lower() == 'y'
+        start_date = None
+        end_date = None
+        
+        if use_date_filter:
+            start_date = input("Start date (YYYY-MM-DD) [optional]: ").strip()
+            end_date = input("End date (YYYY-MM-DD) [optional]: ").strip()
+        
+        # Get format
+        print("\nSelect format:")
+        print("1. CSV")
+        print("2. JSON")
+        print("3. PDF")
+        format_choice = input("Choice (1-3): ").strip()
+        
+        format_map = {'1': 'csv', '2': 'json', '3': 'pdf'}
+        if format_choice not in format_map:
+            print("❌ Invalid format choice")
+            return
+        
+        report_format = format_map[format_choice]
+        
+        # Generate report
+        print("\nGenerating report...")
+        try:
+            result = self.report_gen.generate_report(
+                report_type='file_history',
+                format=report_format,
+                start_date=start_date,
+                end_date=end_date,
+                file_path=file_path if file_path else None
+            )
+            
+            print(f"\n✅ Report generated successfully!")
+            print(f"   File: {result['filename']}")
+            print(f"   Path: {result['filepath']}")
+            print(f"   Records: {result['record_count']}")
+        except Exception as e:
+            print(f"❌ Error generating report: {e}")
+
+    def _generate_system_status_report_interactive(self):
+        """Interactive system status report generation"""
+        print(f"\n{' GENERATE SYSTEM STATUS REPORT ':-^60}")
+        
+        # Get format
+        print("\nSelect format:")
+        print("1. CSV")
+        print("2. JSON")
+        print("3. PDF")
+        format_choice = input("Choice (1-3): ").strip()
+        
+        format_map = {'1': 'csv', '2': 'json', '3': 'pdf'}
+        if format_choice not in format_map:
+            print("❌ Invalid format choice")
+            return
+        
+        report_format = format_map[format_choice]
+        
+        # Generate report
+        print("\nGenerating report...")
+        try:
+            result = self.report_gen.generate_report(
+                report_type='system_status',
+                format=report_format
+            )
+            
+            print(f"\n✅ Report generated successfully!")
+            print(f"   File: {result['filename']}")
+            print(f"   Path: {result['filepath']}")
+        except Exception as e:
+            print(f"❌ Error generating report: {e}")
+
+    def _generate_hash_verification_report_interactive(self):
+        """Interactive hash verification report generation"""
+        print(f"\n{' GENERATE HASH VERIFICATION REPORT ':-^60}")
+        
+        # Get format
+        print("\nSelect format:")
+        print("1. CSV")
+        print("2. JSON")
+        print("3. PDF")
+        format_choice = input("Choice (1-3): ").strip()
+        
+        format_map = {'1': 'csv', '2': 'json', '3': 'pdf'}
+        if format_choice not in format_map:
+            print("❌ Invalid format choice")
+            return
+        
+        report_format = format_map[format_choice]
+        
+        # Generate report
+        print("\nGenerating report...")
+        try:
+            result = self.report_gen.generate_report(
+                report_type='hash_verification',
+                format=report_format
+            )
+            
+            print(f"\n✅ Report generated successfully!")
+            print(f"   File: {result['filename']}")
+            print(f"   Path: {result['filepath']}")
+        except Exception as e:
+            print(f"❌ Error generating report: {e}")
+
+    def _view_reports(self):
+        """View all generated reports"""
+        print(f"\n{' GENERATED REPORTS ':-^60}")
+        
+        reports = self.report_gen.list_reports()
+        
+        if not reports:
+            print("No reports found.")
+            return
+        
+        for i, report in enumerate(reports, 1):
+            size_kb = report['size'] / 1024
+            print(f"\n{i}. {report['filename']}")
+            print(f"   Format: {report['format']}")
+            print(f"   Size: {size_kb:.1f} KB")
+            print(f"   Created: {report['created'][:19].replace('T', ' ')}")
+        
+        print(f"\nTotal reports: {len(reports)}")
+
+    def _delete_report(self):
+        """Delete a generated report"""
+        reports = self.report_gen.list_reports()
+        
+        if not reports:
+            print("No reports to delete.")
+            return
+        
+        self._view_reports()
+        
+        try:
+            choice = input("\nEnter report number to delete (or 0 to cancel): ").strip()
+            if choice == '0':
+                return
+            
+            idx = int(choice) - 1
+            if 0 <= idx < len(reports):
+                filename = reports[idx]['filename']
+                if self.report_gen.delete_report(filename):
+                    print(f"✅ Deleted: {filename}")
+                else:
+                    print(f"❌ Failed to delete: {filename}")
+            else:
+                print("❌ Invalid report number")
+        except ValueError:
+            print("❌ Invalid input")
+    
+    # ==================== MAIN MENU ====================
+    
+    def interactive_menu(self):
+        """Main interactive menu"""
         while True:
             print(f"\n{' ' + SystemConfig.SYSTEM_NAME + ' v' + SystemConfig.VERSION + ' ':=^60}")
             print("1.  Run single scan")
@@ -369,13 +618,14 @@ class SmartFileGuard:
             print("5.  Verify hash chains")
             print("6.  Send test email")
             print("7.  System status")
-            print("8.  Add custom monitoring rule (with risk score)")  
-            print("9.  List custom rules")  
-            print("10. Remove custom rule")  
-            print("11. Exit")
+            print("8.  Add custom monitoring rule (with risk score)")
+            print("9.  List custom rules")
+            print("10. Remove custom rule")
+            print("11. Generate Reports")  # NEW OPTION
+            print("12. Exit")
             print("=" * 60)
             
-            choice = input("\nSelect option (1-11): ").strip()
+            choice = input("\nSelect option (1-12): ").strip()
             
             if choice == '1':
                 self.run_single_scan()
@@ -435,19 +685,23 @@ class SmartFileGuard:
                 self._display_status()
                 input("\nPress Enter to continue...")
                 
-            elif choice == '8':  # NEW: Add custom rule
+            elif choice == '8':
                 self.add_custom_rule()
                 input("\nPress Enter to continue...")
                 
-            elif choice == '9':  # NEW: List rules
+            elif choice == '9':
                 self.list_custom_rules()
                 input("\nPress Enter to continue...")
                 
-            elif choice == '10':  # NEW: Remove rule
+            elif choice == '10':
                 self.remove_custom_rule()
                 input("\nPress Enter to continue...")
                 
-            elif choice == '11':
+            elif choice == '11':  # NEW: Reports menu
+                self.generate_report_menu()
+                input("\nPress Enter to continue...")
+                
+            elif choice == '12':
                 print("\nGoodbye!")
                 break
             
@@ -474,9 +728,34 @@ def main():
         elif sys.argv[1] == '--verify':
             results = system.file_monitor.verify_hash_chains()
             print(f"Hash chain verification: {results}")
+        elif sys.argv[1] == '--report':
+            if len(sys.argv) > 2:
+                report_type = sys.argv[2] if len(sys.argv) > 2 else 'alerts'
+                report_format = sys.argv[3] if len(sys.argv) > 3 else 'csv'
+                
+                print(f"Generating {report_type} report in {report_format} format...")
+                try:
+                    result = system.report_gen.generate_report(
+                        report_type=report_type,
+                        format=report_format
+                    )
+                    print(f"✅ Report generated: {result['filepath']}")
+                except Exception as e:
+                    print(f"❌ Error: {e}")
+            else:
+                print("Usage: python main.py --report [type] [format]")
+                print("  type: alerts, file_history, system_status, hash_verification")
+                print("  format: csv, json, pdf")
+        elif sys.argv[1] == '--list-reports':
+            reports = system.report_gen.list_reports()
+            if reports:
+                for report in reports:
+                    print(f"{report['filename']} ({report['format']}) - {report['created'][:19]}")
+            else:
+                print("No reports found")
         else:
             print(f"Unknown argument: {sys.argv[1]}")
-            print("Usage: python main.py [--daemon|--scan|--test-email|--verify]")
+            print("Usage: python main.py [--daemon|--scan|--test-email|--verify|--report|--list-reports]")
     else:
         # Interactive mode
         system = SmartFileGuard()
