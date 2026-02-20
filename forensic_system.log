@@ -4671,3 +4671,130 @@
 2026-02-20 14:57:53,140 - INFO - Database initialized: forensic_data.db
 2026-02-20 14:57:53,140 - INFO - Audit collector initialized for Windows
 2026-02-20 14:57:53,148 - INFO - System initialized successfully
+2026-02-20 15:14:51,787 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-20 15:14:51,787 - INFO - Database initialized: forensic_data.db
+2026-02-20 15:14:51,795 - INFO - Audit collector initialized for Windows
+2026-02-20 15:14:51,796 - INFO - System initialized successfully
+2026-02-20 15:15:03,546 - INFO - Email alerts disabled
+2026-02-20 15:15:52,570 - INFO - Email alerts disabled
+2026-02-20 15:20:30,343 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-20 15:20:30,343 - INFO - Database initialized: forensic_data.db
+2026-02-20 15:20:30,343 - INFO - Audit collector initialized for Windows
+2026-02-20 15:20:30,343 - INFO - System initialized successfully
+2026-02-20 15:20:39,048 - INFO - Alert sent: Test Alert - Configuration Check
+2026-02-20 15:23:35,550 - INFO - Running single scan...
+2026-02-20 15:23:35,556 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:23:35,646 - INFO - Change detected: CREATED - C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:23:35,646 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:23:35,646 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:23:35,646 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:23:35,655 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user\users.txt (user risk: 0.5)
+2026-02-20 15:23:35,655 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:23:35,655 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt (user risk: 0.5)
+2026-02-20 15:23:35,655 - INFO - Scan complete: 4 files checked
+2026-02-20 15:24:06,291 - INFO - Running single scan...
+2026-02-20 15:24:06,291 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:24:06,300 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:24:06,331 - INFO - Change detected: MODIFIED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:24:06,331 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:24:06,331 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:24:06,331 - INFO - Scan complete: 4 files checked
+2026-02-20 15:24:55,204 - INFO - Running single scan...
+2026-02-20 15:24:55,213 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:24:55,262 - INFO - Change detected: CREATED - C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:24:55,262 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:24:55,262 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:24:55,262 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:24:55,268 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user\users.txt (user risk: 0.5)
+2026-02-20 15:24:55,270 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:24:55,271 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt (user risk: 0.5)
+2026-02-20 15:24:55,271 - INFO - Scan complete: 4 files checked
+2026-02-20 15:25:21,623 - INFO - Running single scan...
+2026-02-20 15:25:21,623 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:25:21,629 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:25:21,655 - INFO - Change detected: MODIFIED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:25:21,655 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:25:21,657 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:25:21,658 - INFO - Scan complete: 4 files checked
+2026-02-20 15:31:07,365 - INFO - Running single scan...
+2026-02-20 15:31:07,365 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:31:07,365 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:31:07,365 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:31:07,365 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:31:07,365 - INFO - Scan complete: 4 files checked
+2026-02-20 15:31:36,981 - INFO - Running single scan...
+2026-02-20 15:31:36,981 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:31:36,981 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:31:37,013 - INFO - Change detected: MODIFIED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:31:37,013 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:31:37,013 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:31:37,021 - INFO - Scan complete: 4 files checked
+2026-02-20 15:34:48,396 - INFO - Running single scan...
+2026-02-20 15:34:48,396 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:34:48,404 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:34:48,404 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:34:48,404 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:34:48,404 - INFO - Scan complete: 4 files checked
+2026-02-20 15:35:03,993 - INFO - Running single scan...
+2026-02-20 15:35:03,993 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:35:03,993 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:35:04,016 - INFO - Change detected: MODIFIED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:35:04,016 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:35:04,016 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:35:04,025 - INFO - Scan complete: 4 files checked
+2026-02-20 15:36:56,312 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-20 15:36:56,338 - INFO - Database initialized: forensic_data.db
+2026-02-20 15:36:56,339 - INFO - Audit collector initialized for Windows
+2026-02-20 15:36:56,339 - INFO - System initialized successfully
+2026-02-20 15:36:58,772 - INFO - Running single scan...
+2026-02-20 15:36:58,775 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:36:58,833 - INFO - Change detected: CREATED - C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:36:58,833 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:37:03,960 - INFO - Alert sent: HIGH RISK: CREATED - secrets.txt
+2026-02-20 15:37:03,963 - ERROR - Error sending email: no such column: email_sent_time
+2026-02-20 15:37:03,963 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:37:03,965 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:37:03,967 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user\users.txt (user risk: 0.5)
+2026-02-20 15:37:03,967 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:37:03,969 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt (user risk: 0.5)
+2026-02-20 15:37:03,969 - INFO - Scan complete: 4 files checked
+2026-02-20 15:39:20,503 - INFO - Running single scan...
+2026-02-20 15:39:20,503 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:39:20,503 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:39:20,503 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:39:20,503 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:39:20,503 - INFO - Scan complete: 4 files checked
+2026-02-20 15:39:38,319 - INFO - Running single scan...
+2026-02-20 15:39:38,319 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:39:38,319 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:39:43,576 - INFO - Alert sent: HIGH RISK: MODIFIED - secrets.txt
+2026-02-20 15:39:43,607 - ERROR - Error sending email: no such column: email_sent_time
+2026-02-20 15:39:43,607 - INFO - Change detected: MODIFIED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:39:43,607 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:39:43,607 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:39:43,615 - INFO - Scan complete: 4 files checked
+2026-02-20 15:39:52,507 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-20 15:39:52,516 - INFO - Database initialized: forensic_data.db
+2026-02-20 15:39:52,516 - INFO - Audit collector initialized for Windows
+2026-02-20 15:39:52,516 - INFO - System initialized successfully
+2026-02-20 15:39:54,437 - INFO - Running single scan...
+2026-02-20 15:39:54,445 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:39:54,514 - INFO - Change detected: CREATED - C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:39:54,514 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:39:59,268 - INFO - Alert sent: HIGH RISK: CREATED - secrets.txt
+2026-02-20 15:39:59,268 - ERROR - Error sending email: no such column: email_sent_time
+2026-02-20 15:39:59,268 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:39:59,268 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:39:59,272 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user\users.txt (user risk: 0.5)
+2026-02-20 15:39:59,272 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:39:59,274 - INFO - Change detected: CREATED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt (user risk: 0.5)
+2026-02-20 15:39:59,274 - INFO - Scan complete: 4 files checked
+2026-02-20 15:40:24,532 - INFO - Running single scan...
+2026-02-20 15:40:24,532 - INFO - Scanning system path: C:\Windows\System32\drivers\etc\hosts
+2026-02-20 15:40:24,540 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt
+2026-02-20 15:40:29,642 - INFO - Alert sent: HIGH RISK: MODIFIED - secrets.txt
+2026-02-20 15:40:29,642 - ERROR - Error sending email: no such column: email_sent_time
+2026-02-20 15:40:29,642 - INFO - Change detected: MODIFIED - C:\Users\mdsid\Documents\SmartFileGuard\demo_files\secrets.txt (user risk: 0.9)
+2026-02-20 15:40:29,642 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
+2026-02-20 15:40:29,642 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
+2026-02-20 15:40:29,642 - INFO - Scan complete: 4 files checked

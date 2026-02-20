@@ -54,15 +54,15 @@ class SystemConfig:
     RISK_HIGH = 0.8
     
     # Email settings
-    ALERT_EMAIL = False
+    ALERT_EMAIL = True
     ALERT_THRESHOLD = 0.7
     EMAIL_SETTINGS = {
-        'enabled': False,
+        'enabled': True,
         'smtp_server': 'smtp.gmail.com',
         'smtp_port': 587,
         'sender_email': os.environ.get('SFG_EMAIL'),
         'sender_password': os.environ.get('SFG_EMAIL_PASS'),
-        'admin_emails': ['admin@example.com'],
+        'admin_emails': ['admin@gmail.com'],
         'use_tls': True,
     }
     

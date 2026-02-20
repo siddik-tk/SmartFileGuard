@@ -16,6 +16,7 @@ from datetime import datetime
 from pathlib import Path
 from enum import Enum
 from typing import Dict, List, Optional, Any
+from alerts import EmailAlertSystem
 import threading
 import queue
 from collections import deque 
@@ -310,6 +311,7 @@ class ForensicDatabase:
             logger.error(f"Error saving snapshot: {e}")
     
     def log_change(self, change_data: Dict):
+        """Log a file change event"""
         try:
             conn = self._get_conn()
             cursor = conn.cursor()
@@ -317,8 +319,8 @@ class ForensicDatabase:
             cursor.execute('''
                 INSERT INTO change_events 
                 (change_type, file_path, old_hash, new_hash, process_name,
-                 process_id, user_name, command_line, risk_score, risk_level,
-                 audit_user, audit_session_id, audit_event_id)
+                process_id, user_name, command_line, risk_score, risk_level,
+                audit_user, audit_session_id, audit_event_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 change_data['change_type'],
@@ -338,11 +340,12 @@ class ForensicDatabase:
             
             change_id = cursor.lastrowid
             
+            # If high risk, create alert AND SEND EMAIL
             if change_data.get('risk_score', 0.0) >= SystemConfig.RISK_HIGH:
                 cursor.execute('''
                     INSERT INTO security_alerts 
                     (alert_type, description, severity, file_path, 
-                     process_name, user_name, risk_score)
+                    process_name, user_name, risk_score)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     'SUSPICIOUS_FILE_CHANGE',
@@ -353,6 +356,27 @@ class ForensicDatabase:
                     change_data.get('user_name'),
                     change_data.get('risk_score')
                 ))
+                
+                alert_id = cursor.lastrowid
+                conn.commit()
+                
+                # SEND EMAIL
+                try:
+                    from alerts import EmailAlertSystem
+                    email = EmailAlertSystem()
+                    
+                    if email.send_high_risk_alert(change_data):
+                        cursor = conn.cursor()
+                        cursor.execute('''
+                            UPDATE security_alerts 
+                            SET email_sent = 1, email_sent_time = CURRENT_TIMESTAMP
+                            WHERE id = ?
+                        ''', (alert_id,))
+                        conn.commit()
+                        logger.info(f"Email alert sent for: {change_data['file_path']}")
+                        
+                except Exception as e:
+                    logger.error(f"Error sending email: {e}")
             
             conn.commit()
             return change_id
@@ -360,6 +384,7 @@ class ForensicDatabase:
         except Exception as e:
             logger.error(f"Error logging change: {e}")
             return None
+
     
     def get_recent_alerts(self, limit: int = 20) -> List[Dict]:
         try:
