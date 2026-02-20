@@ -9,6 +9,7 @@ import csv
 import json
 import logging
 from datetime import datetime
+from reportlab.lib.colors import HexColor 
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
