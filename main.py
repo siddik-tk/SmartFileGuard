@@ -12,6 +12,7 @@ import logging
 import platform
 from datetime import datetime
 from collections import deque
+from banner import show_banner
 
 from config import SystemConfig
 from core import ForensicDatabase, FileMonitor, RealTimeHandler
@@ -711,6 +712,9 @@ class SmartFileGuard:
 
 def main():
     """Main entry point"""
+
+    show_banner()
+
     print(f"\n{' ' + SystemConfig.SYSTEM_NAME + ' v' + SystemConfig.VERSION + ' ':=^60}")
     print(f"Platform: {platform.system()} {platform.release()}")
     print("=" * 60)

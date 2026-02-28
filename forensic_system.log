@@ -4798,3 +4798,19 @@
 2026-02-20 15:40:29,642 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\user
 2026-02-20 15:40:29,642 - INFO - Scanning custom path: C:\Users\mdsid\Documents\SmartFileGuard\demo_files\normal.txt
 2026-02-20 15:40:29,642 - INFO - Scan complete: 4 files checked
+2026-02-28 14:46:27,013 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-28 14:46:27,024 - INFO - Database initialized: forensic_data.db
+2026-02-28 14:46:27,024 - INFO - Audit collector initialized for Windows
+2026-02-28 14:46:27,024 - INFO - System initialized successfully
+2026-02-28 14:48:36,218 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-28 14:48:36,223 - INFO - Database initialized: forensic_data.db
+2026-02-28 14:48:36,223 - INFO - Audit collector initialized for Windows
+2026-02-28 14:48:36,224 - INFO - System initialized successfully
+2026-02-28 14:49:36,882 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-28 14:49:36,882 - INFO - Database initialized: forensic_data.db
+2026-02-28 14:49:36,882 - INFO - Audit collector initialized for Windows
+2026-02-28 14:49:36,882 - INFO - System initialized successfully
+2026-02-28 14:51:40,618 - INFO - Starting SmartFileGuard v2.1.0
+2026-02-28 14:51:40,624 - INFO - Database initialized: forensic_data.db
+2026-02-28 14:51:40,624 - INFO - Audit collector initialized for Windows
+2026-02-28 14:51:40,624 - INFO - System initialized successfully
