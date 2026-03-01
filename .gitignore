@@ -1,6 +1,7 @@
-    *.db
+*.log
+*.db
 *.db-shm
 *.db-wal
-*.log
+reports/
 __pycache__/
 *.pyc

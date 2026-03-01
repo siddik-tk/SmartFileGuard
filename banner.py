@@ -8,14 +8,14 @@ def show_banner():
  \____/|_| |_| |_|\__,_|_|   \__\_|   |_|_|\___|\____/\__,_|\__,_|_|  \__,_|
 
    SmartFileGuard v2.1.0
-   Git-Backed Digital Forensic & Integrity Monitoring System
+   Smart file integrity & git-backed forensic System
 
     Developed by:
     SmartFileGuard Security Team
 
     Team Members:
     • Mohamed Abubakkar Siddik
-    • Madhava Prasadh
+    • Madhava Prasad
     • Mohamed yacoob
 
    Forensic Integrity | Tamper Detection & Alerting | Evidence Preservation

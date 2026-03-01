@@ -17,10 +17,17 @@
             "score": 0.5,
             "recursive": false,
             "type": "file"
+        },
+        {
+            "path": "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\user\\users.txt",
+            "score": 0.3,
+            "recursive": false,
+            "type": "file"
         }
     ],
     "risk_scores": {
         "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\secrets.txt": 0.9,
-        "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\normal.txt": 0.5
+        "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\normal.txt": 0.5,
+        "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\user\\users.txt": 0.3
     }
 }
