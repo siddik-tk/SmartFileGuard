@@ -4814,3 +4814,7 @@
 2026-02-28 14:51:40,624 - INFO - Database initialized: forensic_data.db
 2026-02-28 14:51:40,624 - INFO - Audit collector initialized for Windows
 2026-02-28 14:51:40,624 - INFO - System initialized successfully
+2026-03-01 19:53:27,286 - INFO - Starting SmartFileGuard v2.1.0
+2026-03-01 19:53:27,296 - INFO - Database initialized: forensic_data.db
+2026-03-01 19:53:27,297 - INFO - Audit collector initialized for Windows
+2026-03-01 19:53:27,297 - INFO - System initialized successfully
