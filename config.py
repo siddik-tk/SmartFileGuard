@@ -62,7 +62,7 @@ class SystemConfig:
         'smtp_port': 587,
         'sender_email': os.environ.get('SFG_EMAIL'),
         'sender_password': os.environ.get('SFG_EMAIL_PASS'),
-        'admin_emails': ['admin@gmail.com'],
+        'admin_emails': ['siddik3tk@gmail.com'],
         'use_tls': True,
     }
     

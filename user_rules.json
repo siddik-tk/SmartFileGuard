@@ -1,12 +1,6 @@
 {
     "monitor_paths": [
         {
-            "path": "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\secrets.txt",
-            "score": 0.9,
-            "recursive": false,
-            "type": "file"
-        },
-        {
             "path": "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\user",
             "score": 0.5,
             "recursive": true,
@@ -23,10 +17,15 @@
             "score": 0.3,
             "recursive": false,
             "type": "file"
+        },
+        {
+            "path": "D:\\studies\\Final year project\\SmartFileGuard\\demo_files",
+            "score": 0.9,
+            "recursive": true,
+            "type": "folder"
         }
     ],
     "risk_scores": {
-        "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\secrets.txt": 0.9,
         "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\normal.txt": 0.5,
         "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\demo_files\\user\\users.txt": 0.3
     }
