@@ -73,6 +73,29 @@ class SystemConfig:
     # Real-time monitoring
     REALTIME_MONITORING = True
     REALTIME_EVENT_DELAY = 2.0
+
+    RANSOMWARE_DETECTION = {
+    'enabled': True,
+    'rename_burst_threshold': 15,      # Files renamed in 10 seconds
+    'modify_burst_threshold': 50,      # Files modified in 30 seconds
+    'entropy_threshold': 7.0,          # Shannon entropy (0-8)
+    'canary_check_interval': 60,       # Seconds between canary checks
+    'quarantine_enabled': True,        # Auto-quarantine suspicious processes
+    'alert_on_detection': True,        # Send email alerts
+    }
+
+    # Known safe processes (won't trigger ransomware alerts)
+    SAFE_PROCESSES = [
+        'explorer.exe', 'svchost.exe', 'System', 'TrustedInstaller.exe',
+        'git.exe', 'python.exe', 'smartfileguard.exe', 'code.exe'
+    ]
+
+    # Ransomware note detection patterns
+    RANSOM_NOTE_PATTERNS = [
+        'README', 'DECRYPT', 'RECOVER', 'RESTORE', 'UNLOCK',
+        'HOW_TO', 'HELP', 'INSTRUCTIONS', 'YOUR_FILES',
+        'ransom', 'crypt', 'lock', 'pay', 'contact'
+    ]
     
     # Report settings
     REPORT_DIR = 'reports'
@@ -118,6 +141,7 @@ class SystemConfig:
         else:
             cls.ALERT_EMAIL = False
             cls.EMAIL_SETTINGS['enabled'] = False
+
 
 
 # Auto-configure on import

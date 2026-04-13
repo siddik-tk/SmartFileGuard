@@ -40,6 +40,12 @@ except ImportError:
     class FileSystemEventHandler:
         pass
 
+try:
+    from ransomware_detector import RansomwareDetector
+    RANSOMWARE_AVAILABLE = True
+except ImportError:
+    RANSOMWARE_AVAILABLE = False
+    logger.warning("Ransomware detector not available")
 
 class ChangeType(Enum):
     CREATED = "CREATED"
@@ -604,6 +610,17 @@ class RealTimeHandler(FileSystemEventHandler):
         self.audit_collector = audit_collector
         self.event_queue = queue.Queue()
         self.processing = True
+        
+        # 🆕 Initialize ransomware detector
+        if RANSOMWARE_AVAILABLE:
+            self.ransomware_detector = RansomwareDetector(
+                db=monitor.db,
+                alert_callback=self._on_ransomware_detected
+            )
+            logger.info("Ransomware detection layer active")
+        else:
+            self.ransomware_detector = None
+        
         self.thread = threading.Thread(target=self._process_events, daemon=True)
         self.thread.start()
         logger.info("RealTimeHandler initialized")
@@ -624,6 +641,38 @@ class RealTimeHandler(FileSystemEventHandler):
         if not event.is_directory:
             self.event_queue.put(('MOVED', event.src_path, event.dest_path))
     
+    def _on_ransomware_detected(self, alert: Dict):
+        """Handle ransomware detection - SmartFileGuard Alert"""
+        logger.critical("=" * 60)
+        logger.critical("🚨 SmartFileGuard: RANSOMWARE DETECTED!")
+        logger.critical(f"Type: {alert['primary_detection']}")
+        logger.critical(f"Confidence: {alert['confidence']:.1%}")
+        logger.critical(f"Severity: {alert['severity']}")
+        logger.critical("=" * 60)
+        
+        # Trigger email alert through existing system
+        try:
+            from alerts import EmailAlertSystem
+            email = EmailAlertSystem()
+            email.send_alert(
+                f"🚨 RANSOMWARE DETECTED: {alert['primary_detection']}",
+                f"""
+                SmartFileGuard Ransomware Alert
+                
+                Detection Type: {alert['primary_detection']}
+                Confidence: {alert['confidence']:.1%}
+                Severity: {alert['severity']}
+                Trigger File: {alert['trigger_file']}
+                
+                Recommended Action:
+                {alert['recommended_action']}
+                
+                This is an automated alert from SmartFileGuard v2.1.0
+                """
+            )
+        except Exception as e:
+            logger.error(f"Failed to send ransomware alert: {e}")
+    
     def _process_events(self):
         while self.processing:
             try:
@@ -631,8 +680,9 @@ class RealTimeHandler(FileSystemEventHandler):
                 
                 if len(event_data) == 2:
                     event_type, file_path = event_data
+                    old_path = None
                 else:
-                    event_type, file_path, dest_path = event_data
+                    event_type, file_path, old_path = event_data
                 
                 time.sleep(SystemConfig.REALTIME_EVENT_DELAY)
                 
@@ -640,6 +690,35 @@ class RealTimeHandler(FileSystemEventHandler):
                 if self.audit_collector:
                     audit_data = self.audit_collector.collect_audit_data(file_path, event_type)
                 
+                # Ransomware analysis 
+                if hasattr(self, 'ransomware_detector') and self.ransomware_detector and os.path.exists(file_path):
+                    process_info = {
+                        'pid': audit_data.get('process_id') if audit_data else None,
+                        'name': audit_data.get('process_name') if audit_data else 'Unknown',
+                        'user': audit_data.get('user') if audit_data else None
+                    }
+                    
+                    detection = self.ransomware_detector.analyze_file_event(
+                        event_type=event_type,
+                        file_path=file_path,
+                        old_path=old_path,
+                        process_info=process_info
+                    )
+                    
+                    if detection:
+                        # Log to forensic database
+                        if self.monitor.db:
+                            self.monitor.db.log_change({
+                                'change_type': 'RANSOMWARE_DETECTION',
+                                'file_path': file_path,
+                                'risk_score': detection['confidence'],
+                                'risk_level': detection['severity'],
+                                'process_name': process_info['name'],
+                                'process_id': process_info['pid'],
+                                'user_name': process_info['user'],
+                                'details': json.dumps(detection)
+                            })
+
                 if os.path.exists(file_path):
                     self.monitor.scan_file(file_path, audit_data)
                 

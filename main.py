@@ -12,6 +12,7 @@ import logging
 import platform
 from datetime import datetime
 from collections import deque
+from typing import Dict
 from banner import show_banner
 
 from config import SystemConfig
@@ -68,6 +69,31 @@ class SmartFileGuard:
         self.realtime_events = deque(maxlen=100)
         
         logger.info("System initialized successfully")
+
+        # 🆕 Initialize ransomware detector
+        try:
+            from ransomware_detector import RansomwareDetector
+            self.ransomware_detector = RansomwareDetector(
+                db=self.db,
+                alert_callback=self._on_ransomware_alert
+            )
+            logger.info("SmartFileGuard: Ransomware detection layer active")
+        except ImportError:
+            self.ransomware_detector = None
+            logger.info("SmartFileGuard: Ransomware detection not available")
+
+
+    def _on_ransomware_alert(self, alert: Dict):
+        """Handle ransomware alert from detector"""
+        print("\n" + "🔴" * 30)
+        print("🚨 SmartFileGuard: RANSOMWARE DETECTION!")
+        print("🔴" * 30)
+        print(f"Type: {alert['primary_detection']}")
+        print(f"Confidence: {alert['confidence']:.1%}")
+        print(f"Severity: {alert['severity']}")
+        print(f"File: {os.path.basename(alert['trigger_file'])}")
+        print(f"\n📋 Action: {alert['recommended_action']}")
+        print("🔴" * 30)
 
     def add_custom_rule(self):
         """Add custom monitoring rule with risk score"""
@@ -609,7 +635,6 @@ class SmartFileGuard:
     # ==================== MAIN MENU ====================
     
     def interactive_menu(self):
-        """Main interactive menu"""
         while True:
             print(f"\n{' ' + SystemConfig.SYSTEM_NAME + ' v' + SystemConfig.VERSION + ' ':=^60}")
             print("1.  Run single scan")
@@ -619,14 +644,15 @@ class SmartFileGuard:
             print("5.  Verify hash chains")
             print("6.  Send test email")
             print("7.  System status")
-            print("8.  Add custom monitoring rule (with risk score)")
+            print("8.  Add custom monitoring rule")
             print("9.  List custom rules")
             print("10. Remove custom rule")
-            print("11. Generate Reports")  # NEW OPTION
-            print("12. Exit")
+            print("11. Generate Reports")
+            print("12. Ransomware Detection")  
+            print("13. Exit")
             print("=" * 60)
             
-            choice = input("\nSelect option (1-12): ").strip()
+            choice = input("\nSelect option (1-13): ").strip()
             
             if choice == '1':
                 self.run_single_scan()
@@ -702,13 +728,101 @@ class SmartFileGuard:
                 self.generate_report_menu()
                 input("\nPress Enter to continue...")
                 
-            elif choice == '12':
-                print("\nGoodbye!")
+            elif choice == '12':  # 🆕 Ransomware menu
+                self._ransomware_menu()
+            
+            elif choice == '13':
+                print("\nSmartFileGuard shutting down. Goodbye!")
                 break
             
             else:
                 print("Invalid choice")
 
+    def _ransomware_menu(self):
+        """SmartFileGuard Ransomware Detection Menu"""
+        if not self.ransomware_detector:
+            print("\n❌ Ransomware detection module not available")
+            print("   Install required dependencies: pip install psutil")
+            return
+        
+        while True:
+            print(f"\n{' SmartFileGuard - Ransomware Detection ':-^60}")
+            print("1. View Detection Statistics")
+            print("2. Add Custom Canary File (Decoy)")
+            print("3. View Known Ransomware Extensions")
+            print("4. Check Canary File Status")
+            print("5. Run Safe Detection Test")
+            print("6. Reset Detection State")
+            print("7. Back to Main Menu")
+            print("-" * 60)
+            
+            choice = input("\nSelect option (1-7): ").strip()
+            
+            if choice == '1':
+                stats = self.ransomware_detector.get_detection_stats()
+                print(f"\n📊 SmartFileGuard Ransomware Statistics:")
+                print(f"   Total Detections: {stats['total_detections']}")
+                print(f"   Last Detection: {stats['last_detection'] or 'None'}")
+                print(f"   Active Canaries: {stats['active_canaries']}")
+                print(f"   Status: {'🟢 Active' if stats['enabled'] else '🔴 Disabled'}")
+                
+            elif choice == '2':
+                path = input("\nEnter path for canary/decoy file: ").strip()
+                if path and self.ransomware_detector.add_custom_canary(path):
+                    print(f"✅ Canary file added: {path}")
+                    print("   SmartFileGuard will alert if this file is modified")
+                else:
+                    print("❌ Failed to add canary file")
+                    
+            elif choice == '3':
+                from ransomware_detector import RansomwareDetector
+                exts = sorted(RansomwareDetector.SUSPICIOUS_EXTENSIONS)
+                print(f"\n📋 Known Ransomware Extensions ({len(exts)}):")
+                for i, ext in enumerate(exts, 1):
+                    print(f"   {i:3}. {ext}")
+                    
+            elif choice == '4':
+                print(f"\n📁 Active Canary Files:")
+                for path, hash_val in self.ransomware_detector.canary_files.items():
+                    status = "✅" if os.path.exists(path) else "❌"
+                    print(f"   {status} {os.path.basename(path)}")
+                    
+            elif choice == '5':
+                print("\n⚠️ Running safe ransomware simulation...")
+                self._safe_ransomware_test()
+                
+            elif choice == '6':
+                self.ransomware_detector.reset_detection_state()
+                print("✅ Detection state reset")
+                
+            elif choice == '7':
+                break
+
+    def _safe_ransomware_test(self):
+        """Safe test of ransomware detection"""
+        import time
+        from pathlib import Path
+        
+        test_dir = Path('test_smartfileguard')
+        test_dir.mkdir(exist_ok=True)
+        
+        print("Creating test files...")
+        
+        # Create and rapidly rename files (simulates ransomware)
+        for i in range(15):
+            test_file = test_dir / f"test_doc_{i}.txt"
+            test_file.write_text(f"SmartFileGuard Test Document {i}")
+            
+            # Rename to suspicious extension
+            suspicious_file = test_dir / f"test_doc_{i}.encrypted"
+            test_file.rename(suspicious_file)
+            
+            time.sleep(0.15)
+        
+        print("✅ Test complete!")
+        print(f"   Created 15 test files in: {test_dir}")
+        print("   Check logs for detection events")
+        print("   Run 'View Detection Statistics' to see results")
 
 def main():
     """Main entry point"""
