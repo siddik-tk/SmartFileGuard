@@ -23,6 +23,12 @@
             "score": 0.9,
             "recursive": true,
             "type": "folder"
+        },
+        {
+            "path": "C:\\Users\\mdsid\\Documents\\SmartFileGuard\\test_smartfileguard",
+            "score": 0.9,
+            "recursive": true,
+            "type": "folder"
         }
     ],
     "risk_scores": {

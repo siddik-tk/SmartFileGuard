@@ -747,56 +747,27 @@ class SmartFileGuard:
         
         while True:
             print(f"\n{' SmartFileGuard - Ransomware Detection ':-^60}")
-            print("1. View Detection Statistics")
-            print("2. Add Custom Canary File (Decoy)")
-            print("3. View Known Ransomware Extensions")
-            print("4. Check Canary File Status")
-            print("5. Run Safe Detection Test")
-            print("6. Reset Detection State")
-            print("7. Back to Main Menu")
+            print("1. View Detection Status")
+            print("2. Run Safe Detection Test")
+            print("3. Back to Main Menu")
             print("-" * 60)
             
-            choice = input("\nSelect option (1-7): ").strip()
+            choice = input("\nSelect option (1-3): ").strip()
             
             if choice == '1':
                 stats = self.ransomware_detector.get_detection_stats()
-                print(f"\n📊 SmartFileGuard Ransomware Statistics:")
-                print(f"   Total Detections: {stats['total_detections']}")
-                print(f"   Last Detection: {stats['last_detection'] or 'None'}")
-                print(f"   Active Canaries: {stats['active_canaries']}")
-                print(f"   Status: {'🟢 Active' if stats['enabled'] else '🔴 Disabled'}")
+                print(f"\n📊 Ransomware Detection Status:")
+                print(f"   • Total Detections: {stats['total_detections']}")
+                print(f"   • Active Canaries: {stats['active_canaries']}")
+                print(f"   • Status: {'🟢 Active' if stats['enabled'] else '🔴 Disabled'}")
                 
             elif choice == '2':
-                path = input("\nEnter path for canary/decoy file: ").strip()
-                if path and self.ransomware_detector.add_custom_canary(path):
-                    print(f"✅ Canary file added: {path}")
-                    print("   SmartFileGuard will alert if this file is modified")
-                else:
-                    print("❌ Failed to add canary file")
-                    
-            elif choice == '3':
-                from ransomware_detector import RansomwareDetector
-                exts = sorted(RansomwareDetector.SUSPICIOUS_EXTENSIONS)
-                print(f"\n📋 Known Ransomware Extensions ({len(exts)}):")
-                for i, ext in enumerate(exts, 1):
-                    print(f"   {i:3}. {ext}")
-                    
-            elif choice == '4':
-                print(f"\n📁 Active Canary Files:")
-                for path, hash_val in self.ransomware_detector.canary_files.items():
-                    status = "✅" if os.path.exists(path) else "❌"
-                    print(f"   {status} {os.path.basename(path)}")
-                    
-            elif choice == '5':
                 print("\n⚠️ Running safe ransomware simulation...")
                 self._safe_ransomware_test()
                 
-            elif choice == '6':
-                self.ransomware_detector.reset_detection_state()
-                print("✅ Detection state reset")
-                
-            elif choice == '7':
+            elif choice == '3':
                 break
+                
 
     def _safe_ransomware_test(self):
         """Safe test of ransomware detection"""
