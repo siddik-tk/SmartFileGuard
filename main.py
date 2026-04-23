@@ -90,15 +90,15 @@ class SmartFileGuard:
 
     def _on_ransomware_alert(self, alert: Dict):
         """Handle ransomware alert from detector"""
-        print("\n" + "🔴" * 30)
-        print("🚨 SmartFileGuard: RANSOMWARE DETECTION!")
-        print("🔴" * 30)
+        print("\n" + "!" * 60)
+        print("!!! SmartFileGuard: RANSOMWARE DETECTION !!!")
+        print("!" * 60)
         print(f"Type: {alert['primary_detection']}")
         print(f"Confidence: {alert['confidence']:.1%}")
         print(f"Severity: {alert['severity']}")
         print(f"File: {os.path.basename(alert['trigger_file'])}")
-        print(f"\n📋 Action: {alert['recommended_action']}")
-        print("🔴" * 30)
+        print(f"\nAction: {alert['recommended_action']}")
+        print("!" * 60)
 
     def add_custom_rule(self):
         """Add custom monitoring rule with risk score"""
@@ -636,12 +636,71 @@ class SmartFileGuard:
                 print("❌ Invalid report number")
         except ValueError:
             print("❌ Invalid input")
+
+    def _reset_database(self):
+        """Completely reset the forensic database for fresh start"""
+        print(f"\n{' RESET DATABASE ':-^60}")
+        print("[!]This will delete ALL forensic data!")
+        confirm = input("Type 'YES' to confirm: ").strip()
+        
+        if confirm != 'YES':
+            print("[X] Reset cancelled")
+            return
+        
+        # Close existing database connection
+        if self.db:
+            try:
+                # Check for thread-local connection
+                if hasattr(self.db, '_local') and hasattr(self.db._local, 'connection'):
+                    if self.db._local.connection:
+                        self.db._local.connection.close()
+                        self.db._local.connection = None
+                # Fallback for old style
+                elif hasattr(self.db, 'connection') and self.db.connection:
+                    self.db.connection.close()
+                    self.db.connection = None
+            except:
+                pass
+        
+        # Delete database file
+        db_path = SystemConfig.DB_NAME
+        if os.path.exists(db_path):
+            try:
+                os.remove(db_path)
+                print(f"✅ Deleted: {db_path}")
+            except Exception as e:
+                print(f"❌ Could not delete database: {e}")
+        
+        # Clear log file (truncate instead of delete)
+        log_path = 'forensic_system.log'
+        if os.path.exists(log_path):
+            try:
+                with open(log_path, 'w') as f:
+                    f.write('')
+                print(f"✅ Cleared: {log_path}")
+            except Exception as e:
+                print(f"❌ Could not clear log: {e}")
+        
+        # Reinitialize database
+        self.db = ForensicDatabase()
+        print("✅ Fresh database created")
+        
+        # Clear file cache
+        self.file_monitor.file_cache.clear()
+        print("✅ File cache cleared")
+        
+        # Reset scan count
+        self.scan_count = 0
+        self.start_time = datetime.now()
+        
+        input("\nPress Enter to continue...")
     
     # ==================== MAIN MENU ====================
     
     def interactive_menu(self):
         while True:
             print(f"\n{' ' + SystemConfig.SYSTEM_NAME + ' v' + SystemConfig.VERSION + ' ':=^60}")
+            print("0.  Reset Database (Fresh Start)")
             print("1.  Run single scan")
             print("2.  Start continuous monitoring")
             print("3.  View recent alerts")
@@ -654,11 +713,14 @@ class SmartFileGuard:
             print("10. Remove custom rule")
             print("11. Generate Reports")
             print("12. Ransomware Detection")
-            print("13. 📦 Git Status")  # 🆕 SIMPLE - Just view status
+            print("13. Git Status")  
             print("14. Exit")
             print("=" * 60)
             
             choice = input("\nSelect option (1-14): ").strip()
+
+            if choice == '0':
+                self._reset_database()
             
             if choice == '1':
                 self.run_single_scan()
@@ -750,8 +812,7 @@ class SmartFileGuard:
     def _ransomware_menu(self):
         """SmartFileGuard Ransomware Detection Menu"""
         if not self.ransomware_detector:
-            print("\n❌ Ransomware detection module not available")
-            print("   Install required dependencies: pip install psutil")
+            print("\n[X] Ransomware detection module not available")
             return
         
         while True:
@@ -765,13 +826,14 @@ class SmartFileGuard:
             
             if choice == '1':
                 stats = self.ransomware_detector.get_detection_stats()
-                print(f"\n📊 Ransomware Detection Status:")
-                print(f"   • Total Detections: {stats['total_detections']}")
-                print(f"   • Active Canaries: {stats['active_canaries']}")
-                print(f"   • Status: {'🟢 Active' if stats['enabled'] else '🔴 Disabled'}")
+                print(f"\nRansomware Detection Status:")
+                print(f"   * Total Detections: {stats['total_detections']}")
+                print(f"   * Active Canaries: {stats['active_canaries']}")
+                status_text = "ACTIVE" if stats['enabled'] else "DISABLED"
+                print(f"   * Status: {status_text}")
                 
             elif choice == '2':
-                print("\n⚠️ Running safe ransomware simulation...")
+                print("\n[!] Running safe ransomware simulation...")
                 self._safe_ransomware_test()
                 
             elif choice == '3':
@@ -786,17 +848,15 @@ class SmartFileGuard:
         status = git.get_status()
         
         if not status.get('enabled'):
-            print("\n❌ Git is not available on this system")
-            print("   Install Git for automatic version control")
+            print("\n[X] Git is not available on this system")
         elif not status.get('initialized'):
-            print("\n⚠️ Git repository not initialized")
+            print("\n[!] Git repository not initialized")
         else:
-            print(f"\n📊 Git Forensic Repository:")
-            print(f"   • Total Commits: {status.get('total_commits', 0)}")
-            print(f"   • Last Commit: {status.get('last_commit', 'N/A')}")
-            print(f"   • Location: {status.get('repo_path')}")
-            print(f"\n✅ Git auto-commit is ENABLED")
-            print("   Every file change is automatically preserved")
+            print(f"\nGit Forensic Repository:")
+            print(f"   * Total Commits: {status.get('total_commits', 0)}")
+            print(f"   * Last Commit: {status.get('last_commit', 'N/A')}")
+            print(f"   * Location: {status.get('repo_path')}")
+            print(f"\n[OK] Git auto-commit is ENABLED")
         
         input("\nPress Enter to continue...")
 

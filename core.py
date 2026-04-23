@@ -186,17 +186,17 @@ class ForensicDatabase:
     
     def __init__(self, db_path: str = SystemConfig.DB_NAME):
         self.db_path = db_path
-        self.connection = None
+        self._local = threading.local()  # Thread-local storage
         self._init_db()
         self._setup_backup()
     
     def _get_conn(self):
-        if self.connection is None:
-            self.connection = sqlite3.connect(self.db_path, timeout=30)
-            self.connection.execute('PRAGMA journal_mode=WAL')
-            self.connection.execute('PRAGMA synchronous=NORMAL')
-            self.connection.execute('PRAGMA cache_size=10000')
-        return self.connection
+        # Create a NEW connection for each thread
+        if not hasattr(self._local, 'connection') or self._local.connection is None:
+            self._local.connection = sqlite3.connect(self.db_path, timeout=30, check_same_thread=False)
+            self._local.connection.execute('PRAGMA journal_mode=WAL')
+            self._local.connection.execute('PRAGMA synchronous=NORMAL')
+        return self._local.connection
     
     def _init_db(self):
         conn = self._get_conn()
@@ -430,7 +430,11 @@ class ForensicDatabase:
             return []
     
     def close(self):
-        if self.connection:
+        if hasattr(self, '_local') and hasattr(self._local, 'connection'):
+            if self._local.connection:
+                self._local.connection.close()
+                self._local.connection = None
+        elif hasattr(self, 'connection') and self.connection:
             self.connection.close()
             self.connection = None
 
@@ -556,6 +560,7 @@ class FileMonitor:
             logger.error(f"Error scanning path {path}: {e}")
     
     def verify_hash_chains(self) -> Dict[str, int]:
+        """Verify hash chain integrity - FIXED VERSION"""
         results = {'verified': 0, 'tampered': 0, 'errors': 0}
         
         conn = None
@@ -564,62 +569,64 @@ class FileMonitor:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
+            # Get all snapshots grouped by file
             cursor.execute('''
-                SELECT file_path, chain_hash, previous_snapshot_hash
+                SELECT file_path, chain_hash, previous_snapshot_hash, snapshot_time
                 FROM file_snapshots 
                 ORDER BY file_path, snapshot_time
             ''')
             
             rows = cursor.fetchall()
-            current_file = None
-            previous_hash = None
             
+            # Group by file path
+            file_chains = {}
             for row in rows:
                 file_path = row['file_path']
-                current_hash = row['chain_hash']
-                prev_hash = row['previous_snapshot_hash']
-                
-                if prev_hash:
-                    if prev_hash == previous_hash:
-                        results['verified'] += 1
-                    else:
-                        results['tampered'] += 1
-                        logger.warning(f"Hash chain tampered for: {file_path}")
-                
-                if current_file != file_path:
-                    current_file = file_path
-                    previous_hash = current_hash
-                else:
-                    previous_hash = current_hash
+                if file_path not in file_chains:
+                    file_chains[file_path] = []
+                file_chains[file_path].append({
+                    'chain_hash': row['chain_hash'],
+                    'prev_hash': row['previous_snapshot_hash'],
+                    'time': row['snapshot_time']
+                })
+            
+            # Verify each file's chain
+            for file_path, snapshots in file_chains.items():
+                if len(snapshots) < 2:
+                    continue
                     
+                for i in range(1, len(snapshots)):
+                    current = snapshots[i]
+                    previous = snapshots[i-1]
+                    
+                    # The current snapshot's prev_hash should match previous snapshot's chain_hash
+                    if current['prev_hash'] and previous['chain_hash']:
+                        if current['prev_hash'] == previous['chain_hash']:
+                            results['verified'] += 1
+                        else:
+                            results['tampered'] += 1
+                            logger.warning(f"Hash chain tampered for: {file_path}")
+                    else:
+                        results['errors'] += 1
+                        
         except Exception as e:
             logger.error(f"Hash chain verification failed: {e}")
             results['errors'] += 1
         finally:
             if conn:
                 conn.close()
-
-        # 🔥 Send email alert if tampering detected
+        
+        # Send alert if tampering detected
         if results['tampered'] > 0:
             try:
                 from alerts import EmailAlertSystem
                 email = EmailAlertSystem()
                 email.send_alert(
                     "⚠️ HASH CHAIN TAMPER DETECTED",
-                    f"""
-                    SmartFileGuard Hash Chain Alert
-                    
-                    Tampered Files: {results['tampered']}
-                    Verified Files: {results['verified']}
-                    Errors: {results['errors']}
-                    
-                    This indicates possible database tampering!
-                    Immediate investigation required.
-                    """
+                    f"Tampered Files: {results['tampered']}\nVerified: {results['verified']}"
                 )
-                logger.info("Hash chain tamper alert email sent")
-            except Exception as e:
-                logger.error(f"Failed to send tamper alert: {e}")
+            except:
+                pass
         
         return results
 
@@ -713,7 +720,7 @@ class RealTimeHandler(FileSystemEventHandler):
                 if self.audit_collector:
                     audit_data = self.audit_collector.collect_audit_data(file_path, event_type)
                 
-                # 🔥 FIXED: Ransomware analysis - ALWAYS RUN THIS
+                # Ransomware analysis 
                 if hasattr(self, 'ransomware_detector') and self.ransomware_detector:
                     if os.path.exists(file_path) or event_type == 'DELETED':
                         process_info = {
@@ -742,13 +749,15 @@ class RealTimeHandler(FileSystemEventHandler):
                                     'details': json.dumps(detection)
                                 })
                 
+                # Scan the file
                 if os.path.exists(file_path):
-                    self.monitor.scan_file(file_path, audit_data)
-
-                # 🔥 SILENT GIT COMMIT
-                if hasattr(self, 'git_manager'):
-                    risk = self.monitor.get_user_risk_score(file_path) or 0.5
-                    self.git_manager.commit_change(file_path, event_type, risk)
+                    snapshot = self.monitor.scan_file(file_path, audit_data)
+                    
+                    # 🔥 FIXED: Git commit after successful scan
+                    if snapshot and hasattr(self, 'git_manager') and self.git_manager.enabled:
+                        risk_score = snapshot.risk_score
+                        self.git_manager.commit_change(file_path, event_type, risk_score)
+                        logger.info(f"Git commit created for: {file_path}")
                 
             except queue.Empty:
                 continue
