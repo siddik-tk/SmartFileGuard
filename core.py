@@ -19,6 +19,7 @@ from typing import Dict, List, Optional, Any
 from alerts import EmailAlertSystem
 import threading
 import queue
+from git_manager import GitManager
 from collections import deque 
 
 from config import SystemConfig
@@ -346,7 +347,6 @@ class ForensicDatabase:
             
             change_id = cursor.lastrowid
             
-            # If high risk, create alert AND SEND EMAIL
             if change_data.get('risk_score', 0.0) >= SystemConfig.RISK_HIGH:
                 cursor.execute('''
                     INSERT INTO security_alerts 
@@ -366,7 +366,6 @@ class ForensicDatabase:
                 alert_id = cursor.lastrowid
                 conn.commit()
                 
-                # SEND EMAIL
                 try:
                     from alerts import EmailAlertSystem
                     email = EmailAlertSystem()
@@ -599,6 +598,28 @@ class FileMonitor:
         finally:
             if conn:
                 conn.close()
+
+        # 🔥 Send email alert if tampering detected
+        if results['tampered'] > 0:
+            try:
+                from alerts import EmailAlertSystem
+                email = EmailAlertSystem()
+                email.send_alert(
+                    "⚠️ HASH CHAIN TAMPER DETECTED",
+                    f"""
+                    SmartFileGuard Hash Chain Alert
+                    
+                    Tampered Files: {results['tampered']}
+                    Verified Files: {results['verified']}
+                    Errors: {results['errors']}
+                    
+                    This indicates possible database tampering!
+                    Immediate investigation required.
+                    """
+                )
+                logger.info("Hash chain tamper alert email sent")
+            except Exception as e:
+                logger.error(f"Failed to send tamper alert: {e}")
         
         return results
 
@@ -611,7 +632,10 @@ class RealTimeHandler(FileSystemEventHandler):
         self.event_queue = queue.Queue()
         self.processing = True
         
-        # 🆕 Initialize ransomware detector
+        # Initialize Git Manager
+        self.git_manager = GitManager()
+        
+        # Initialize ransomware detector
         if RANSOMWARE_AVAILABLE:
             self.ransomware_detector = RansomwareDetector(
                 db=monitor.db,
@@ -623,7 +647,7 @@ class RealTimeHandler(FileSystemEventHandler):
         
         self.thread = threading.Thread(target=self._process_events, daemon=True)
         self.thread.start()
-        logger.info("RealTimeHandler initialized")
+        logger.info("RealTimeHandler initialized with Git integration")
     
     def on_created(self, event):
         if not event.is_directory:
@@ -650,7 +674,6 @@ class RealTimeHandler(FileSystemEventHandler):
         logger.critical(f"Severity: {alert['severity']}")
         logger.critical("=" * 60)
         
-        # Trigger email alert through existing system
         try:
             from alerts import EmailAlertSystem
             email = EmailAlertSystem()
@@ -690,37 +713,42 @@ class RealTimeHandler(FileSystemEventHandler):
                 if self.audit_collector:
                     audit_data = self.audit_collector.collect_audit_data(file_path, event_type)
                 
-                # Ransomware analysis 
-                if hasattr(self, 'ransomware_detector') and self.ransomware_detector and os.path.exists(file_path):
-                    process_info = {
-                        'pid': audit_data.get('process_id') if audit_data else None,
-                        'name': audit_data.get('process_name') if audit_data else 'Unknown',
-                        'user': audit_data.get('user') if audit_data else None
-                    }
-                    
-                    detection = self.ransomware_detector.analyze_file_event(
-                        event_type=event_type,
-                        file_path=file_path,
-                        old_path=old_path,
-                        process_info=process_info
-                    )
-                    
-                    if detection:
-                        # Log to forensic database
-                        if self.monitor.db:
-                            self.monitor.db.log_change({
-                                'change_type': 'RANSOMWARE_DETECTION',
-                                'file_path': file_path,
-                                'risk_score': detection['confidence'],
-                                'risk_level': detection['severity'],
-                                'process_name': process_info['name'],
-                                'process_id': process_info['pid'],
-                                'user_name': process_info['user'],
-                                'details': json.dumps(detection)
-                            })
-
+                # 🔥 FIXED: Ransomware analysis - ALWAYS RUN THIS
+                if hasattr(self, 'ransomware_detector') and self.ransomware_detector:
+                    if os.path.exists(file_path) or event_type == 'DELETED':
+                        process_info = {
+                            'pid': audit_data.get('process_id') if audit_data else None,
+                            'name': audit_data.get('process_name') if audit_data else 'Unknown',
+                            'user': audit_data.get('user') if audit_data else None
+                        }
+                        
+                        detection = self.ransomware_detector.analyze_file_event(
+                            event_type=event_type,
+                            file_path=file_path,
+                            old_path=old_path,
+                            process_info=process_info
+                        )
+                        
+                        if detection:
+                            if self.monitor.db:
+                                self.monitor.db.log_change({
+                                    'change_type': 'RANSOMWARE_DETECTION',
+                                    'file_path': file_path,
+                                    'risk_score': detection['confidence'],
+                                    'risk_level': detection['severity'],
+                                    'process_name': process_info['name'],
+                                    'process_id': process_info['pid'],
+                                    'user_name': process_info['user'],
+                                    'details': json.dumps(detection)
+                                })
+                
                 if os.path.exists(file_path):
                     self.monitor.scan_file(file_path, audit_data)
+
+                # 🔥 SILENT GIT COMMIT
+                if hasattr(self, 'git_manager'):
+                    risk = self.monitor.get_user_risk_score(file_path) or 0.5
+                    self.git_manager.commit_change(file_path, event_type, risk)
                 
             except queue.Empty:
                 continue
