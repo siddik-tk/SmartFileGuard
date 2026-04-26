@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFileGuard - Server Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #090d13;
+            color: #c8cdd0;
+            min-height: 100vh;
+        }
+        .login-overlay {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.96);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-box {
+            background: #101620;
+            padding: 45px 40px;
+            border-radius: 16px;
+            border: 1px solid #1c2533;
+            text-align: center;
+            min-width: 420px;
+        }
+        .login-box h2 {
+            color: #22c55e;
+            margin-bottom: 8px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 14px;
+            margin: 8px 0;
+            background: #090d13;
+            border: 1px solid #1c2533;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+        }
+        .login-box input:focus {
+            border-color: #22c55e;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 14px;
+            background: #22c55e;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .login-box button:hover {
+            background: #16a34a;
+        }
+        .login-box .error {
+            color: #ef4444;
+            margin-top: 10px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        .header {
+            background: #101620;
+            padding: 14px 28px;
+            border-bottom: 2px solid #22c55e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 {
+            font-size: 20px;
+            color: #22c55e;
+        }
+        .session-timer {
+            background: #1a2733;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #f59e0b;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 600;
+            border: none;
+            font-size: 12px;
+            transition: all .2s;
+        }
+        .btn:hover {
+            opacity: .85;
+            transform: translateY(-1px);
+        }
+        .btn-green {
+            background: #22c55e;
+            color: #000;
+        }
+        .btn-red {
+            background: #ef4444;
+            color: #fff;
+        }
+        .btn-blue {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .btn-orange {
+            background: #f59e0b;
+            color: #000;
+        }
+        .btn-purple {
+            background: #8b5cf6;
+            color: #fff;
+        }
+        .btn-cyan {
+            background: #06b6d4;
+            color: #000;
+        }
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 22px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #101620;
+            border-radius: 10px;
+            padding: 22px;
+            text-align: center;
+            border: 1px solid #1c2533;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .card:hover {
+            border-color: #22c55e;
+            transform: translateY(-2px);
+        }
+        .card .val {
+            font-size: 32px;
+            font-weight: 800;
+            color: #22c55e;
+        }
+        .card .lbl {
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+        .section {
+            background: #101620;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #1c2533;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .section h2 {
+            color: #22c55e;
+            font-size: 16px;
+            border-left: 3px solid #22c55e;
+            padding-left: 10px;
+            margin: 0;
+        }
+        .refresh-info {
+            font-size: 11px;
+            color: #64748b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #1c2533;
+        }
+        th {
+            background: #090d13;
+            color: #22c55e;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: #151c28;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-connected {
+            background: rgba(34, 197, 94, .15);
+            color: #22c55e;
+        }
+        .badge-disconnected {
+            background: rgba(239, 68, 68, .15);
+            color: #ef4444;
+        }
+        .badge-idle {
+            background: rgba(245, 158, 11, .15);
+            color: #f59e0b;
+        }
+        .badge-critical {
+            background: rgba(239, 68, 68, .15);
+            color: #ef4444;
+        }
+        .badge-high {
+            background: rgba(249, 115, 22, .15);
+            color: #f97316;
+        }
+        .badge-medium {
+            background: rgba(245, 158, 11, .15);
+            color: #f59e0b;
+        }
+        .badge-low {
+            background: rgba(34, 197, 94, .15);
+            color: #22c55e;
+        }
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #1c2533;
+        }
+        .tab {
+            padding: 9px 18px;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 7px 7px 0 0;
+        }
+        .tab.active {
+            background: #101620;
+            color: #22c55e;
+            border: 1px solid #1c2533;
+            border-bottom: 2px solid #101620;
+            margin-bottom: -2px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, .85);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #101620;
+            padding: 30px;
+            border-radius: 14px;
+            border: 1px solid #1c2533;
+            min-width: 500px;
+            max-width: 90%;
+        }
+        .modal h3 {
+            color: #22c55e;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .modal input, .modal select {
+            width: 100%;
+            padding: 11px;
+            margin: 6px 0;
+            background: #090d13;
+            border: 1px solid #1c2533;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .modal .msg {
+            color: #ef4444;
+            font-size: 13px;
+            min-height: 18px;
+            margin: 6px 0;
+            text-align: center;
+        }
+        .modal .success-msg {
+            color: #22c55e;
+        }
+        .date-range {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .date-range > div {
+            flex: 1;
+        }
+        .date-range label {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .quick-dates {
+            display: flex;
+            gap: 8px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .quick-date-btn {
+            background: #1c2533;
+            border: none;
+            color: #c8cdd0;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .quick-date-btn:hover {
+            background: #2a3a47;
+        }
+        .live-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 2s infinite;
+            margin-right: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+        .hash-val {
+            font-family: monospace;
+            font-size: 10px;
+            color: #f59e0b;
+            background: #090d13;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .flatpickr-calendar {
+            background: #101620 !important;
+            border-color: #1c2533 !important;
+        }
+        .flatpickr-day {
+            color: #c8cdd0 !important;
+        }
+        .flatpickr-day.selected {
+            background: #22c55e !important;
+            border-color: #22c55e !important;
+        }
+        .flatpickr-months .flatpickr-month {
+            color: #22c55e !important;
+        }
+        .flatpickr-current-month .flatpickr-monthDropdown-months {
+            background: #101620 !important;
+            color: #c8cdd0 !important;
+        }
+        .flatpickr-weekday {
+            color: #22c55e !important;
+        }
+        .email-form-group {
+            margin-bottom: 15px;
+        }
+        .email-form-group label {
+            display: block;
+            color: #64748b;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .email-form-group input {
+            width: 100%;
+        }
+        .notification-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10001;
+            max-width: 380px;
+            width: 100%;
+        }
+        .notification {
+            background: #1a2733;
+            border-left: 4px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInLeft 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .notification:hover {
+            transform: translateX(5px);
+            background: #1f2e3d;
+        }
+        .notification.critical {
+            border-left-color: #ef4444;
+            background: #2a1a1a;
+        }
+        .notification.high {
+            border-left-color: #f97316;
+        }
+        .notification.medium {
+            border-left-color: #f59e0b;
+        }
+        .notification.low {
+            border-left-color: #22c55e;
+        }
+        .notification-icon {
+            font-size: 20px;
+        }
+        .notification-content {
+            flex: 1;
+        }
+        .notification-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+        .notification-message {
+            font-size: 11px;
+            color: #a0aec0;
+        }
+        .notification-time {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .notification-close {
+            cursor: pointer;
+            color: #64748b;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+        .notification-close:hover {
+            color: #ef4444;
+        }
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 10002;
+            animation: slideInLeft 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast-success {
+            background: #22c55e;
+            color: #000;
+        }
+        .toast-error {
+            background: #ef4444;
+            color: #fff;
+        }
+        .toast-info {
+            background: #06b6d4;
+            color: #000;
+        }
+        .last-update {
+            font-size: 10px;
+            color: #64748b;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>SmartFileGuard</h2>
+            <input type="text" id="username" placeholder="Username" value="admin" autocomplete="off">
+            <input type="password" id="password" placeholder="Password" autocomplete="new-password">
+            <button onclick="doLogin()">Sign In</button>
+            <div class="error" id="loginError"></div>
+        </div>
+    </div>
+
+    <div id="notificationContainer" class="notification-container"></div>
+
+    <!-- Email Password Verification Modal -->
+    <div class="modal-overlay" id="emailAuthModal">
+        <div class="modal">
+            <h3>🔐 Admin Verification Required</h3>
+            <p style="color:#64748b;text-align:center;margin-bottom:20px;">Please enter your admin password to configure email alerts</p>
+            <input type="password" id="emailAdminPassword" placeholder="Admin Password" style="width:100%;padding:12px;">
+            <p class="msg" id="emailAuthMsg"></p>
+            <div style="display:flex;gap:8px;margin-top:20px">
+                <button class="btn btn-green" onclick="verifyAndShowEmailConfig()" style="flex:1">Verify & Continue</button>
+                <button class="btn btn-red" onclick="closeEmailAuthModal()" style="flex:1">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Configuration Modal -->
+    <div class="modal-overlay" id="emailModal">
+        <div class="modal">
+            <h3>📧 Configure Email Alerts</h3>
+            <div class="email-form-group">
+                <label>SMTP Server</label>
+                <input type="text" id="smtpServer" placeholder="smtp.gmail.com" value="smtp.gmail.com">
+            </div>
+            <div class="email-form-group">
+                <label>SMTP Port</label>
+                <input type="number" id="smtpPort" placeholder="587" value="587">
+            </div>
+            <div class="email-form-group">
+                <label>Sender Email</label>
+                <input type="email" id="senderEmail" placeholder="your-email@gmail.com">
+            </div>
+            <div class="email-form-group">
+                <label>App Password (not regular password)</label>
+                <input type="password" id="emailPassword" placeholder="App password for Gmail">
+            </div>
+            <div class="email-form-group">
+                <label>Admin Email (recipient)</label>
+                <input type="email" id="adminEmail" placeholder="admin@example.com">
+            </div>
+            <p class="msg" id="emailMsg"></p>
+            <div style="display:flex;gap:8px;margin-top:15px">
+                <button class="btn btn-green" onclick="saveEmailConfig()" style="flex:1">Save & Test</button>
+                <button class="btn btn-red" onclick="closeEmailModal()" style="flex:1">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-overlay" id="exportModal">
+        <div class="modal">
+            <h3>📊 Export Data</h3>
+            <div class="quick-dates">
+                <button class="quick-date-btn" onclick="setQuickDate('today')">Today</button>
+                <button class="quick-date-btn" onclick="setQuickDate('yesterday')">Yesterday</button>
+                <button class="quick-date-btn" onclick="setQuickDate('week')">Last 7 Days</button>
+                <button class="quick-date-btn" onclick="setQuickDate('month')">Last 30 Days</button>
+                <button class="quick-date-btn" onclick="clearDates()">Clear</button>
+            </div>
+            <div class="date-range">
+                <div>
+                    <label>📅 Start Date</label>
+                    <input type="text" id="startDate" class="date-picker" placeholder="Select start date">
+                </div>
+                <div>
+                    <label>📅 End Date</label>
+                    <input type="text" id="endDate" class="date-picker" placeholder="Select end date">
+                </div>
+            </div>
+            <div class="email-form-group">
+                <label>Node (optional)</label>
+                <input type="text" id="exportNode" placeholder="All nodes">
+            </div>
+            <div class="email-form-group">
+                <label>Format</label>
+                <select id="exportFormat">
+                    <option value="json">JSON</option>
+                    <option value="csv">CSV</option>
+                    <option value="pdf">PDF</option>
+                </select>
+            </div>
+            <p class="msg" id="exportMsg"></p>
+            <div style="display:flex;gap:8px;margin-top:15px">
+                <button class="btn btn-green" onclick="doExport()" style="flex:1">Export</button>
+                <button class="btn btn-red" onclick="closeExportModal()" style="flex:1">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Change Modal -->
+    <div class="modal-overlay" id="pwdModal">
+        <div class="modal">
+            <h3>Change Password</h3>
+            <input type="password" id="oldPwd" placeholder="Current Password" autocomplete="off">
+            <input type="password" id="newPwd" placeholder="New Password (6+)" autocomplete="new-password">
+            <input type="password" id="confirmPwd" placeholder="Confirm Password" autocomplete="new-password">
+            <p class="msg" id="pwdMsg"></p>
+            <div style="display:flex;gap:8px;margin-top:15px">
+                <button class="btn btn-green" onclick="changePassword()" style="flex:1">Update</button>
+                <button class="btn btn-red" onclick="closePwdModal()" style="flex:1">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainApp" class="hidden">
+        <div class="header">
+            <h1><span class="live-dot"></span>SmartFileGuard Dashboard</h1>
+            <div class="header-actions">
+                <span class="session-timer" id="sessionTimer">59:59</span>
+                <button class="btn btn-cyan" onclick="manualRefresh()">🔄 Refresh</button>
+                <button class="btn btn-purple" onclick="showEmailAuthModal()">📧 Email Config</button>
+                <button class="btn btn-green" onclick="startAllScans()">Start All</button>
+                <button class="btn btn-red" onclick="stopAllScans()">Stop All</button>
+                <button class="btn btn-orange" onclick="showExportModal()">Export</button>
+                <button class="btn btn-blue" onclick="showPwdModal()">Password</button>
+                <button class="btn btn-red" onclick="resetSystem()">Reset</button>
+                <button class="btn btn-red" onclick="doLogout()">Sign Out</button>
+            </div>
+        </div>
+        <div class="container">
+            <div class="stats">
+                <div class="card" onclick="switchToTab('nodes')">
+                    <div class="val" id="activeNodes">0</div>
+                    <div class="lbl">CONNECTED</div>
+                </div>
+                <div class="card" onclick="switchToTab('nodes')">
+                    <div class="val" id="totalNodes">0</div>
+                    <div class="lbl">TOTAL NODES</div>
+                </div>
+                <div class="card" onclick="switchToTab('alerts')">
+                    <div class="val" id="totalAlerts">0</div>
+                    <div class="lbl">ALERTS</div>
+                </div>
+                <div class="card" onclick="switchToTab('alerts')">
+                    <div class="val" id="recentAlerts">0</div>
+                    <div class="lbl">24H</div>
+                </div>
+                <div class="card" onclick="switchToTab('history')">
+                    <div class="val" id="fileEvents">0</div>
+                    <div class="lbl">EVENTS</div>
+                </div>
+                <div class="card" onclick="switchToTab('history')">
+                    <div class="val" id="uniqueFiles">0</div>
+                    <div class="lbl">FILES</div>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <button class="tab active" onclick="switchTab('nodes')">Nodes</button>
+                <button class="tab" onclick="switchTab('alerts')">Alerts</button>
+                <button class="tab" onclick="switchTab('history')">File History</button>
+                <button class="tab" onclick="switchTab('exports')">Exports</button>
+            </div>
+            <div class="section" id="tab-nodes">
+                <div class="section-header">
+                    <h2>📡 Nodes</h2>
+                    <div class="refresh-info">
+                        <span id="nodesLastUpdate">Auto-refresh every 8s</span>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="nodesTable">
+                        <thead>
+                            <tr><th>Status</th><th>Node</th><th>Group</th><th>IP</th><th>Last Seen</th><th>Action</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="section hidden" id="tab-alerts">
+                <div class="section-header">
+                    <h2>🚨 Alerts</h2>
+                    <div class="refresh-info">
+                        <span id="alertsLastUpdate">Auto-refresh every 8s</span>
+                        <button class="btn btn-red" onclick="clearAlerts()" style="margin-left:10px; padding:4px 12px; font-size:10px;">Clear All</button>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="alertsTable">
+                        <thead>
+                            <tr><th>Time</th><th>Node</th><th>Type</th><th>Sev</th><th>File</th><th>User</th><th>Risk</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="section hidden" id="tab-history">
+                <div class="section-header">
+                    <h2>📜 File History</h2>
+                    <div class="refresh-info">
+                        <span id="historyLastUpdate">Auto-refresh every 8s</span>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="historyTable">
+                        <thead>
+                            <tr><th>Time</th><th>Node</th><th>File</th><th>Change</th><th>User</th><th>Risk</th><th>Old Hash</th><th>New Hash</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="section hidden" id="tab-exports">
+                <div class="section-header">
+                    <h2>📁 Exports</h2>
+                    <button class="btn btn-orange" onclick="showExportModal()" style="padding:4px 12px; font-size:10px;">New Export</button>
+                </div>
+                <div id="exportsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminToken = '', interval, sessionTimerInterval;
+        let sessionStartTime = null;
+        let startDatePicker, endDatePicker;
+        let lastAlertCount = 0;
+        
+        // Track previous node statuses to detect actual changes
+        let nodeStatusMap = new Map();
+        let notificationCooldown = new Map(); // Prevent spam
+        
+        function showNotification(title, message, severity = 'medium') {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${severity}`;
+            
+            let icon = '🔔';
+            if (severity === 'critical') icon = '🚨';
+            else if (severity === 'high') icon = '⚠️';
+            else if (severity === 'low') icon = 'ℹ️';
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            
+            notification.innerHTML = `
+                <div class="notification-icon">${icon}</div>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                    <div class="notification-time">${timeStr}</div>
+                </div>
+                <div class="notification-close" onclick="this.parentElement.remove()">✕</div>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 8000);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function checkForNewAlerts(alerts) {
+            if (!alerts || !alerts.alerts) return;
+            
+            const currentAlerts = alerts.alerts;
+            const currentCount = currentAlerts.length;
+            
+            if (currentCount > lastAlertCount) {
+                const newAlerts = currentAlerts.slice(0, currentCount - lastAlertCount);
+                for (const alert of newAlerts) {
+                    const severity = (alert.severity || 'medium').toLowerCase();
+                    const fileName = (alert.file_path || '').split('/').pop().split('\\').pop() || 'Unknown';
+                    const alertType = alert.alert_type || 'Alert';
+                    const nodeName = alert.node_name || 'Unknown';
+                    const risk = alert.risk_score ? Math.round(alert.risk_score * 100) : 0;
+                    
+                    if (severity === 'critical') {
+                        showNotification(`🚨 CRITICAL ALERT from ${nodeName}`, `${alertType}: ${fileName} - Risk: ${risk}%`, 'critical');
+                    } else if (severity === 'high' || risk > 70) {
+                        showNotification(`⚠️ HIGH RISK from ${nodeName}`, `${alertType}: ${fileName}`, 'high');
+                    } else if (severity === 'medium') {
+                        showNotification(`Alert from ${nodeName}`, `${alertType}: ${fileName}`, 'medium');
+                    }
+                }
+            }
+            lastAlertCount = currentCount;
+        }
+
+        // Check for node connection changes - ONLY when status actually changes
+        function checkForNodeChanges(nodes) {
+            if (!nodes || !nodes.nodes) return;
+            
+            const currentNodes = nodes.nodes;
+            
+            for (const node of currentNodes) {
+                const nodeName = node.node_name;
+                const currentStatus = node.connection_status || 'unknown';
+                const previousStatus = nodeStatusMap.get(nodeName);
+                
+                // Check if status changed
+                if (previousStatus && previousStatus !== currentStatus) {
+                    // Check cooldown to prevent spam
+                    const lastNotify = notificationCooldown.get(nodeName) || 0;
+                    const now = Date.now();
+                    
+                    // Only notify if more than 30 seconds since last notification for this node
+                    if (now - lastNotify > 30000) {
+                        notificationCooldown.set(nodeName, now);
+                        
+                        if (currentStatus === 'connected' && previousStatus !== 'connected') {
+                            showNotification(`🟢 Node Connected`, `${nodeName} is now online`, 'low');
+                        } else if (currentStatus === 'disconnected' && previousStatus !== 'disconnected') {
+                            showNotification(`🔴 Node Disconnected`, `${nodeName} has lost connection`, 'medium');
+                        } else if (currentStatus === 'idle' && previousStatus === 'connected') {
+                            showNotification(`💤 Node Idle`, `${nodeName} has been inactive`, 'low');
+                        }
+                    }
+                }
+                
+                // Update stored status
+                nodeStatusMap.set(nodeName, currentStatus);
+            }
+            
+            // Check for nodes that went offline (not in list anymore)
+            for (const [nodeName, previousStatus] of nodeStatusMap) {
+                const stillExists = currentNodes.some(n => n.node_name === nodeName);
+                if (!stillExists && previousStatus !== 'disconnected' && previousStatus !== 'offline') {
+                    const lastNotify = notificationCooldown.get(nodeName) || 0;
+                    const now = Date.now();
+                    
+                    if (now - lastNotify > 30000) {
+                        notificationCooldown.set(nodeName, now);
+                        showNotification(`🔴 Node Disconnected`, `${nodeName} has gone offline`, 'medium');
+                    }
+                    nodeStatusMap.set(nodeName, 'offline');
+                }
+            }
+        }
+
+        async function manualRefresh() {
+            const refreshBtn = document.querySelector('.btn-cyan');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '⏳ Refreshing...';
+            refreshBtn.disabled = true;
+            
+            try {
+                await loadAll();
+                showToast('Dashboard refreshed successfully', 'success');
+            } catch (error) {
+                showToast('Refresh failed', 'error');
+            } finally {
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+            }
+        }
+
+        function switchToTab(tabName) {
+            const tabButtons = document.querySelectorAll('.tab');
+            const sections = document.querySelectorAll('.section');
+            
+            tabButtons.forEach(t => t.classList.remove('active'));
+            sections.forEach(s => s.classList.add('hidden'));
+            
+            let targetTab;
+            if (tabName === 'nodes') targetTab = document.querySelector('.tab:first-child');
+            else if (tabName === 'alerts') targetTab = document.querySelectorAll('.tab')[1];
+            else if (tabName === 'history') targetTab = document.querySelectorAll('.tab')[2];
+            else targetTab = document.querySelectorAll('.tab')[3];
+            
+            if (targetTab) targetTab.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        }
+
+        function startSessionTimer() {
+            sessionStartTime = Date.now();
+            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+            sessionTimerInterval = setInterval(updateSessionTimer, 1000);
+        }
+
+        function updateSessionTimer() {
+            if (!sessionStartTime) return;
+            const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const remaining = (60 * 60) - elapsed;
+            if (remaining <= 0) {
+                clearInterval(sessionTimerInterval);
+                doLogout();
+                showNotification('Session Expired', 'Please login again', 'critical');
+                return;
+            }
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            const timerElement = document.getElementById('sessionTimer');
+            if (timerElement) {
+                timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                if (remaining < 300) {
+                    timerElement.style.color = '#ef4444';
+                } else if (remaining < 600) {
+                    timerElement.style.color = '#f59e0b';
+                } else {
+                    timerElement.style.color = '#22c55e';
+                }
+            }
+        }
+
+        function initDatePickers() {
+            startDatePicker = flatpickr("#startDate", {
+                dateFormat: "Y-m-d",
+                altFormat: "F j, Y",
+                altInput: true,
+                allowInput: true,
+                onChange: function(selectedDates, dateStr, instance) {
+                    if (endDatePicker && selectedDates[0]) {
+                        endDatePicker.set('minDate', selectedDates[0]);
+                    }
+                }
+            });
+            
+            endDatePicker = flatpickr("#endDate", {
+                dateFormat: "Y-m-d",
+                altFormat: "F j, Y",
+                altInput: true,
+                allowInput: true
+            });
+        }
+
+        async function api(url, method = 'GET', body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (adminToken) headers['X-Admin-Token'] = adminToken;
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+            const response = await fetch(url, options);
+            if (response.status === 401 || response.status === 403) {
+                showNotification('Session Expired', 'Please login again', 'critical');
+                doLogout();
+                return {};
+            }
+            return response.json();
+        }
+
+        async function doLogin() {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: document.getElementById('username').value,
+                    password: document.getElementById('password').value
+                })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                adminToken = data.token;
+                sessionStartTime = Date.now();
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('mainApp').classList.remove('hidden');
+                // Reset node tracking on login
+                nodeStatusMap.clear();
+                notificationCooldown.clear();
+                await loadAll();
+                interval = setInterval(loadAll, 8000);
+                startSessionTimer();
+                loadEmailStatus();
+                initDatePickers();
+                showToast('Login successful', 'success');
+            } else {
+                document.getElementById('loginError').textContent = data.message || 'Login failed';
+            }
+        }
+
+        function doLogout() {
+            fetch('/api/auth/logout', { method: 'POST' });
+            adminToken = '';
+            clearInterval(interval);
+            clearInterval(sessionTimerInterval);
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('mainApp').classList.add('hidden');
+            showToast('Logged out successfully', 'info');
+        }
+
+        async function loadEmailStatus() {
+            const status = await api('/api/email/status');
+            const emailBtn = document.querySelector('.btn-purple');
+            if (emailBtn) {
+                if (status.configured) {
+                    emailBtn.innerHTML = '📧 Email ✓';
+                    emailBtn.style.background = '#22c55e';
+                    emailBtn.style.color = '#000';
+                } else {
+                    emailBtn.innerHTML = '📧 Email Config';
+                    emailBtn.style.background = '#8b5cf6';
+                    emailBtn.style.color = '#fff';
+                }
+            }
+        }
+
+        function showEmailAuthModal() {
+            document.getElementById('emailAuthModal').classList.add('active');
+            document.getElementById('emailAdminPassword').value = '';
+            document.getElementById('emailAuthMsg').textContent = '';
+        }
+
+        function closeEmailAuthModal() {
+            document.getElementById('emailAuthModal').classList.remove('active');
+        }
+
+        async function verifyAndShowEmailConfig() {
+            const adminPassword = document.getElementById('emailAdminPassword').value;
+            if (!adminPassword) {
+                document.getElementById('emailAuthMsg').textContent = 'Please enter admin password';
+                return;
+            }
+
+            const response = await api('/api/auth/verify-password', 'POST', {
+                password: adminPassword
+            });
+
+            if (response.verified) {
+                closeEmailAuthModal();
+                const status = await api('/api/email/status');
+                document.getElementById('senderEmail').value = status.sender_email || '';
+                document.getElementById('adminEmail').value = status.admin_email || '';
+                document.getElementById('smtpServer').value = status.smtp_server || 'smtp.gmail.com';
+                document.getElementById('smtpPort').value = status.smtp_port || 587;
+                document.getElementById('emailPassword').value = '';
+                document.getElementById('emailMsg').textContent = '';
+                document.getElementById('emailModal').classList.add('active');
+            } else {
+                document.getElementById('emailAuthMsg').textContent = 'Invalid admin password';
+            }
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('active');
+        }
+
+        async function saveEmailConfig() {
+            const senderEmail = document.getElementById('senderEmail').value;
+            const emailPassword = document.getElementById('emailPassword').value;
+            const adminEmail = document.getElementById('adminEmail').value;
+            const smtpServer = document.getElementById('smtpServer').value;
+            const smtpPort = document.getElementById('smtpPort').value;
+
+            if (!senderEmail || !adminEmail) {
+                document.getElementById('emailMsg').textContent = 'Sender email and admin email are required';
+                return;
+            }
+
+            const response = await api('/api/email/configure', 'POST', {
+                sender_email: senderEmail,
+                sender_password: emailPassword,
+                admin_email: adminEmail,
+                smtp_server: smtpServer,
+                smtp_port: parseInt(smtpPort)
+            });
+
+            if (response.status === 'success') {
+                document.getElementById('emailMsg').textContent = '✓ Email configured and test sent successfully!';
+                document.getElementById('emailMsg').className = 'msg success-msg';
+                showNotification('Email Configured', 'Test email sent successfully', 'success');
+                showToast('Email configured successfully', 'success');
+                setTimeout(() => closeEmailModal(), 2000);
+                loadEmailStatus();
+            } else {
+                document.getElementById('emailMsg').textContent = response.message || 'Configuration failed';
+                document.getElementById('emailMsg').className = 'msg';
+            }
+        }
+
+        async function loadAll() {
+            const now = new Date().toLocaleTimeString();
+            
+            const [nodes, alerts, stats, history] = await Promise.all([
+                api('/api/nodes'),
+                api('/api/alerts'),
+                api('/api/stats'),
+                api('/api/file-history')
+            ]);
+
+            if (alerts) {
+                checkForNewAlerts(alerts);
+            }
+            
+            if (nodes) {
+                checkForNodeChanges(nodes);
+            }
+
+            document.getElementById('activeNodes').textContent = stats.active_nodes || 0;
+            document.getElementById('totalNodes').textContent = stats.total_nodes || 0;
+            document.getElementById('totalAlerts').textContent = stats.total_alerts || 0;
+            document.getElementById('recentAlerts').textContent = stats.recent_alerts_24h || 0;
+            document.getElementById('fileEvents').textContent = stats.total_file_events || 0;
+            document.getElementById('uniqueFiles').textContent = stats.unique_files_tracked || 0;
+
+            document.getElementById('nodesLastUpdate').innerHTML = `Last update: ${now}`;
+            document.getElementById('alertsLastUpdate').innerHTML = `Last update: ${now}`;
+            document.getElementById('historyLastUpdate').innerHTML = `Last update: ${now}`;
+
+            let nh = '';
+            if (nodes.nodes && nodes.nodes.length) {
+                nodes.nodes.forEach(nd => {
+                    nh += `<tr>
+                        <td><span class="badge badge-${nd.connection_status || 'unknown'}">${(nd.connection_status || 'unknown').toUpperCase()}</span></td>
+                        <td>${nd.node_name || '-'}</td>
+                        <td>${nd.node_group || '-'}</td>
+                        <td>${nd.ip_address || '-'}</td>
+                        <td>${(nd.last_seen || '').substring(0, 19)}</span></td>
+                        <td>
+                            <button class="btn btn-green" style="font-size:10px;padding:4px 8px" onclick="scanNode('${nd.node_name}')">Start</button>
+                            <button class="btn btn-red" style="font-size:10px;padding:4px 8px" onclick="stopNode('${nd.node_name}')">Stop</button>
+                        </td>
+                    </tr>`;
+                });
+            } else {
+                nh = '<tr><td colspan="6" style="text-align:center;color:#64748b;padding:30px">No nodes</td></tr>';
+            }
+            document.querySelector('#nodesTable tbody').innerHTML = nh;
+
+            let ah = '';
+            if (alerts.alerts && alerts.alerts.length) {
+                alerts.alerts.forEach(al => {
+                    const rowStyle = (al.risk_score && al.risk_score > 0.7) ? 'style="background: rgba(239,68,68,0.1)"' : '';
+                    ah += `<tr ${rowStyle}>
+                        <td style="white-space:nowrap">${(al.alert_time || '').substring(0, 19)}</td>
+                        <td>${al.node_name || '-'}</td>
+                        <td>${(al.alert_type || '').substring(0, 22)}</td>
+                        <td><span class="badge badge-${(al.severity || 'low').toLowerCase()}">${al.severity || 'LOW'}</span></td>
+                        <td>${(al.file_path || '').split('\\').pop().split('/').pop().substring(0, 22)}</td>
+                        <td>${al.user_name || '-'}</td>
+                        <td>${al.risk_score ? Math.round(al.risk_score * 100) + '%' : '-'}</td>
+                    </tr>`;
+                });
+            } else {
+                ah = '<tr><td colspan="7" style="text-align:center;color:#64748b;padding:30px">No alerts</td></tr>';
+            }
+            document.querySelector('#alertsTable tbody').innerHTML = ah;
+
+            let fh = '';
+            if (history.file_history && history.file_history.length) {
+                history.file_history.forEach(he => {
+                    const oh = (he.hash_before || '').substring(0, 10);
+                    const nh2 = (he.hash_after || '').substring(0, 10);
+                    fh += `<tr>
+                        <td style="white-space:nowrap">${(he.event_time || '').substring(0, 19)}</td>
+                        <td>${he.node_name || '-'}</td>
+                        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${he.file_path || ''}">${(he.file_path || '').split('\\').pop().split('/').pop().substring(0, 25)}</td>
+                        <td>${he.change_type || '-'}</td>
+                        <td>${he.user_name || '-'}</td>
+                        <td>${he.risk_score ? Math.round(he.risk_score * 100) + '%' : '-'}</td>
+                        <td class="hash-val">${oh || 'N/A'}</td>
+                        <td class="hash-val">${nh2 || 'N/A'}</td>
+                    </tr>`;
+                });
+            } else {
+                fh = '<tr><td colspan="8" style="text-align:center;color:#64748b;padding:30px">No events</td></tr>';
+            }
+            document.querySelector('#historyTable tbody').innerHTML = fh;
+            updateExports();
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(x => x.classList.add('hidden'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
+        }
+
+        function setQuickDate(range) {
+            const today = new Date();
+            let startDate = new Date();
+            let endDate = new Date();
+            
+            switch(range) {
+                case 'today':
+                    startDate = today;
+                    endDate = today;
+                    break;
+                case 'yesterday':
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() - 1);
+                    endDate = new Date(today);
+                    endDate.setDate(today.getDate() - 1);
+                    break;
+                case 'week':
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() - 7);
+                    endDate = today;
+                    break;
+                case 'month':
+                    startDate = new Date(today);
+                    startDate.setDate(today.getDate() - 30);
+                    endDate = today;
+                    break;
+            }
+            
+            if (startDatePicker) startDatePicker.setDate(startDate);
+            if (endDatePicker) endDatePicker.setDate(endDate);
+        }
+
+        function clearDates() {
+            if (startDatePicker) startDatePicker.clear();
+            if (endDatePicker) endDatePicker.clear();
+        }
+
+        function showExportModal() {
+            document.getElementById('exportModal').classList.add('active');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+
+        async function doExport() {
+            const startDate = startDatePicker ? startDatePicker.input.value : '';
+            const endDate = endDatePicker ? endDatePicker.input.value : '';
+            const format = document.getElementById('exportFormat').value;
+            const node = document.getElementById('exportNode').value;
+            
+            const response = await api('/api/export', 'POST', {
+                format: format,
+                start_date: startDate,
+                end_date: endDate,
+                node: node || undefined
+            });
+            if (response.status === 'success') {
+                window.open('/api/export/download/' + response.result.filename, '_blank');
+                closeExportModal();
+                updateExports();
+                showToast('Export generated successfully', 'success');
+            }
+        }
+
+        async function updateExports() {
+            const data = await api('/api/exports');
+            const div = document.getElementById('exportsList');
+            if (data.exports && data.exports.length) {
+                div.innerHTML = data.exports.map(e => `
+                    <div style="padding:10px;margin:4px 0;background:#090d13;border-radius:7px;display:flex;justify-content:space-between;align-items:center">
+                        <span>${e.filename} (${(e.size / 1024).toFixed(1)}KB)</span>
+                        <span>
+                            <button class="btn btn-blue" style="font-size:10px;padding:5px 12px" onclick="window.open('/api/export/download/${e.filename}')">Download</button>
+                            <button class="btn btn-red" style="font-size:10px;padding:5px 12px" onclick="delExp('${e.filename}')">Delete</button>
+                        </span>
+                    </div>
+                `).join('');
+            } else {
+                div.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px">No exports</p>';
+            }
+        }
+
+        async function delExp(filename) {
+            await api('/api/exports/' + filename, 'DELETE');
+            updateExports();
+            showToast('Export deleted', 'info');
+        }
+
+        async function clearAlerts() {
+            if (confirm('Delete all alerts?')) {
+                await api('/api/alerts/clear', 'POST');
+                await loadAll();
+                showToast('All alerts cleared', 'success');
+            }
+        }
+
+        async function startAllScans() {
+            await api('/api/scan/start-all', 'POST');
+            showToast('Scan started on all nodes', 'success');
+        }
+
+        async function stopAllScans() {
+            await api('/api/scan/stop-all', 'POST');
+            showToast('Scan stopped on all nodes', 'info');
+        }
+
+        async function scanNode(node) {
+            await api('/api/scan/start/' + node, 'POST');
+            showToast(`Scan started on ${node}`, 'success');
+        }
+
+        async function stopNode(node) {
+            await api('/api/scan/stop/' + node, 'POST');
+            showToast(`Scan stopped on ${node}`, 'info');
+        }
+
+        async function resetSystem() {
+            if (confirm('DELETE ALL DATA? This action cannot be undone.')) {
+                await api('/api/system/reset', 'POST');
+                await loadAll();
+                showToast('All data reset successfully', 'success');
+            }
+        }
+
+        function showPwdModal() {
+            document.getElementById('pwdModal').classList.add('active');
+        }
+
+        function closePwdModal() {
+            document.getElementById('pwdModal').classList.remove('active');
+            document.getElementById('oldPwd').value = '';
+            document.getElementById('newPwd').value = '';
+            document.getElementById('confirmPwd').value = '';
+            document.getElementById('pwdMsg').textContent = '';
+        }
+
+        async function changePassword() {
+            const oldPwd = document.getElementById('oldPwd').value;
+            const newPwd = document.getElementById('newPwd').value;
+            const confirmPwd = document.getElementById('confirmPwd').value;
+            if (!oldPwd || !newPwd) {
+                document.getElementById('pwdMsg').textContent = 'All fields required';
+                return;
+            }
+            if (newPwd !== confirmPwd) {
+                document.getElementById('pwdMsg').textContent = 'Passwords do not match';
+                return;
+            }
+            if (newPwd.length < 6) {
+                document.getElementById('pwdMsg').textContent = 'Password must be at least 6 characters';
+                return;
+            }
+            const response = await api('/api/auth/change-password', 'POST', {
+                username: 'admin',
+                old_password: oldPwd,
+                new_password: newPwd
+            });
+            if (response.status === 'success') {
+                showToast(response.message, 'success');
+                closePwdModal();
+                doLogout();
+            } else {
+                document.getElementById('pwdMsg').textContent = response.message;
+            }
+        }
+
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') doLogin();
+        });
+
+        fetch('/api/auth/status').then(r => r.json()).then(data => {
+            if (data.authenticated) {
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('mainApp').classList.remove('hidden');
+                loadAll();
+                interval = setInterval(loadAll, 8000);
+                startSessionTimer();
+                loadEmailStatus();
+                initDatePickers();
+            }
+        });
+    </script>
+</body>
+</html>

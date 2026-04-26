@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFileGuard - Client Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #090d13;
+            color: #c8cdd0;
+            min-height: 100vh;
+        }
+        .login-overlay {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.96);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-box {
+            background: #101620;
+            padding: 45px;
+            border-radius: 16px;
+            border: 1px solid #1c2533;
+            text-align: center;
+            min-width: 350px;
+        }
+        .login-box h2 {
+            color: #22c55e;
+            margin-bottom: 20px;
+        }
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #090d13;
+            border: 1px solid #1c2533;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: #22c55e;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .login-box button:hover {
+            background: #16a34a;
+        }
+        .login-box .error {
+            color: #ef4444;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .header {
+            background: #101620;
+            padding: 15px 25px;
+            border-bottom: 2px solid #22c55e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header h1 {
+            font-size: 18px;
+            color: #22c55e;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+        .btn-green {
+            background: #22c55e;
+            color: #000;
+        }
+        .btn-red {
+            background: #ef4444;
+            color: #fff;
+        }
+        .btn-blue {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .btn-orange {
+            background: #f59e0b;
+            color: #000;
+        }
+        .btn-cyan {
+            background: #06b6d4;
+            color: #000;
+        }
+        .container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #101620;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid #1c2533;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .card:hover {
+            border-color: #22c55e;
+            transform: translateY(-2px);
+        }
+        .card .val {
+            font-size: 28px;
+            font-weight: bold;
+            color: #22c55e;
+        }
+        .card .lbl {
+            color: #64748b;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+        .section {
+            background: #101620;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #1c2533;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .section h2 {
+            color: #22c55e;
+            font-size: 16px;
+            border-left: 3px solid #22c55e;
+            padding-left: 10px;
+            margin: 0;
+        }
+        .refresh-info {
+            font-size: 11px;
+            color: #64748b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #1c2533;
+        }
+        th {
+            color: #22c55e;
+            background: #090d13;
+        }
+        tr:hover {
+            background: #151c28;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .badge-critical {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        .badge-high {
+            background: rgba(249, 115, 22, 0.2);
+            color: #f97316;
+        }
+        .badge-medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+        .badge-low {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+        .tab-bar {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #1c2533;
+        }
+        .tab {
+            padding: 8px 16px;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .tab.active {
+            color: #22c55e;
+            border-bottom: 2px solid #22c55e;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .hash-val {
+            font-family: monospace;
+            font-size: 10px;
+            color: #f59e0b;
+            background: #090d13;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .live-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 1s infinite;
+            margin-right: 6px;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .status-badge {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-connected {
+            background: #22c55e;
+            box-shadow: 0 0 5px #22c55e;
+        }
+        .status-offline {
+            background: #ef4444;
+        }
+        /* Notification Container - LEFT SIDE */
+        .notification-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 10001;
+            max-width: 380px;
+            width: 100%;
+        }
+        .notification {
+            background: #1a2733;
+            border-left: 4px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInLeft 0.3s ease-out;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .notification:hover {
+            transform: translateX(5px);
+            background: #1f2e3d;
+        }
+        .notification.critical {
+            border-left-color: #ef4444;
+            background: #2a1a1a;
+        }
+        .notification.high {
+            border-left-color: #f97316;
+        }
+        .notification.medium {
+            border-left-color: #f59e0b;
+        }
+        .notification.low {
+            border-left-color: #22c55e;
+        }
+        .notification-icon {
+            font-size: 20px;
+        }
+        .notification-content {
+            flex: 1;
+        }
+        .notification-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+        .notification-message {
+            font-size: 11px;
+            color: #a0aec0;
+        }
+        .notification-time {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .notification-close {
+            cursor: pointer;
+            color: #64748b;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+        .notification-close:hover {
+            color: #ef4444;
+        }
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #64748b;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 10002;
+            animation: slideInLeft 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .toast-success {
+            background: #22c55e;
+            color: #000;
+        }
+        .toast-error {
+            background: #ef4444;
+            color: #fff;
+        }
+        .toast-info {
+            background: #06b6d4;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <h2>🔒 SmartFileGuard Client</h2>
+            <input type="text" id="username" placeholder="Username" value="client" autocomplete="off">
+            <input type="password" id="password" placeholder="Password" autocomplete="off">
+            <button onclick="doLogin()">Sign In</button>
+            <div class="error" id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- Notification Container - LEFT SIDE -->
+    <div id="notificationContainer" class="notification-container"></div>
+
+    <div id="mainApp" class="hidden">
+        <div class="header">
+            <h1><span class="live-dot"></span>SmartFileGuard Client Monitor</h1>
+            <div class="header-actions">
+                <span id="serverStatus" style="font-size:12px;">⚫ Checking...</span>
+                <button class="btn btn-cyan" onclick="manualRefresh()">🔄 Refresh</button>
+                <button class="btn btn-orange" onclick="showResetConfirm()">🗑️ Reset</button>
+                <button class="btn btn-red" onclick="doLogout()">🚪 Logout</button>
+            </div>
+        </div>
+        <div class="container">
+            <div class="stats">
+                <div class="card" onclick="switchToTab('alerts')">
+                    <div class="val" id="totalAlerts">0</div>
+                    <div class="lbl">TOTAL ALERTS</div>
+                </div>
+                <div class="card" onclick="switchToTab('history')">
+                    <div class="val" id="totalChanges">0</div>
+                    <div class="lbl">FILE CHANGES</div>
+                </div>
+                <div class="card" onclick="switchToTab('history')">
+                    <div class="val" id="uniqueFiles">0</div>
+                    <div class="lbl">UNIQUE FILES</div>
+                </div>
+                <div class="card" onclick="switchToTab('alerts')">
+                    <div class="val" id="unresolved">0</div>
+                    <div class="lbl">UNRESOLVED</div>
+                </div>
+            </div>
+            <div class="tab-bar">
+                <button class="tab active" onclick="switchTab('alerts')">📋 Alerts</button>
+                <button class="tab" onclick="switchTab('history')">📜 File History</button>
+                <button class="tab" onclick="switchTab('hash')">🔑 Hash Check</button>
+            </div>
+            <div class="section" id="tab-alerts">
+                <div class="section-header">
+                    <h2>📢 Recent Security Alerts</h2>
+                    <div class="refresh-info">
+                        <span id="alertLastUpdate">Auto-refresh every 5s</span>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="alertsTable">
+                        <thead>
+                            <tr><th>Time</th><th>Type</th><th>Severity</th><th>File</th><th>Risk</th></tr>
+                        </thead>
+                        <tbody id="alertsBody">
+                            <tr><td colspan="5" class="loading">Loading alerts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="section hidden" id="tab-history">
+                <div class="section-header">
+                    <h2>📁 File Change History</h2>
+                    <div class="refresh-info">
+                        <span id="historyLastUpdate">Auto-refresh every 5s</span>
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="historyTable">
+                        <thead>
+                            <tr><th>Time</th><th>File</th><th>Change</th><th>Old Hash</th><th>New Hash</th></tr>
+                        </thead>
+                        <tbody id="historyBody">
+                            <tr><td colspan="5" class="loading">Loading history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="section hidden" id="tab-hash">
+                <h2>🔐 File Hash Verification</h2>
+                <input type="text" id="filePath" placeholder="Enter full file path to verify" style="width:100%; padding:12px; background:#090d13; border:1px solid #1c2533; color:#fff; border-radius:6px; font-size:14px;">
+                <button class="btn btn-green" onclick="checkHash()" style="margin-top:10px; width:100%;">🔍 Calculate SHA-256 Hash</button>
+                <div id="hashResult" style="margin-top:15px; padding:12px; background:#090d13; border-radius:6px; font-family:monospace; font-size:12px; word-break:break-all;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let clientToken = '';
+        let refreshInterval = null;
+        let lastAlertCount = 0;
+        let isRefreshing = false;
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function showNotification(title, message, severity = 'medium') {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${severity}`;
+            
+            let icon = '🔔';
+            if (severity === 'critical') icon = '🚨';
+            else if (severity === 'high') icon = '⚠️';
+            else if (severity === 'low') icon = 'ℹ️';
+            
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+            
+            notification.innerHTML = `
+                <div class="notification-icon">${icon}</div>
+                <div class="notification-content">
+                    <div class="notification-title">${title}</div>
+                    <div class="notification-message">${message}</div>
+                    <div class="notification-time">${timeStr}</div>
+                </div>
+                <div class="notification-close" onclick="this.parentElement.remove()">✕</div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Auto remove after 8 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 8000);
+        }
+
+        async function manualRefresh() {
+            if (isRefreshing) return;
+            isRefreshing = true;
+            
+            const refreshBtn = document.querySelector('.btn-cyan');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '⏳ Refreshing...';
+            refreshBtn.disabled = true;
+            
+            await loadAllData();
+            showToast('Dashboard refreshed', 'success');
+            
+            refreshBtn.innerHTML = originalText;
+            refreshBtn.disabled = false;
+            isRefreshing = false;
+        }
+
+        async function api(endpoint, method = 'GET', body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (clientToken) headers['X-Client-Token'] = clientToken;
+            
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+            
+            try {
+                const response = await fetch(endpoint, options);
+                if (response.status === 401) {
+                    showNotification('Session Expired', 'Please login again.', 'critical');
+                    setTimeout(() => doLogout(), 2000);
+                    return null;
+                }
+                if (!response.ok) return null;
+                return await response.json();
+            } catch (error) {
+                console.error('API error:', error);
+                return null;
+            }
+        }
+
+        async function checkForNewAlerts(alerts) {
+            if (!alerts || !alerts.alerts) return;
+            
+            const currentAlerts = alerts.alerts;
+            const currentCount = currentAlerts.length;
+            
+            if (currentCount > lastAlertCount) {
+                const newAlerts = currentAlerts.slice(0, currentCount - lastAlertCount);
+                for (const alert of newAlerts) {
+                    const severity = (alert.severity || 'medium').toLowerCase();
+                    const fileName = (alert.file_path || '').split('/').pop().split('\\').pop() || 'Unknown';
+                    const alertType = alert.alert_type || 'File Change';
+                    const risk = alert.risk_score ? Math.round(alert.risk_score * 100) : 0;
+                    
+                    if (severity === 'critical') {
+                        showNotification(`🚨 CRITICAL: ${alertType}`, `File "${fileName}" - Risk: ${risk}%`, 'critical');
+                    } else if (severity === 'high' || risk > 70) {
+                        showNotification(`⚠️ HIGH RISK: ${alertType}`, `File "${fileName}" was modified`, 'high');
+                    } else if (severity === 'medium') {
+                        showNotification(`Alert: ${alertType}`, `File "${fileName}" changed`, 'medium');
+                    }
+                }
+            }
+            lastAlertCount = currentCount;
+        }
+
+        async function doLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            errorDiv.textContent = 'Logging in...';
+            errorDiv.style.color = '#22c55e';
+            
+            try {
+                const response = await fetch('/api/client/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    clientToken = data.token;
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('mainApp').classList.remove('hidden');
+                    
+                    showNotification('Welcome', 'Connected to SmartFileGuard Client', 'low');
+                    await loadAllData();
+                    
+                    if (refreshInterval) clearInterval(refreshInterval);
+                    refreshInterval = setInterval(loadAllData, 5000);
+                    
+                    updateServerStatus();
+                    setInterval(updateServerStatus, 10000);
+                } else {
+                    errorDiv.textContent = data.message || 'Invalid credentials';
+                    errorDiv.style.color = '#ef4444';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection error. Make sure client is running.';
+                errorDiv.style.color = '#ef4444';
+            }
+        }
+
+        function doLogout() {
+            fetch('/api/client/logout', { method: 'POST' }).catch(() => {});
+            clientToken = '';
+            if (refreshInterval) clearInterval(refreshInterval);
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('mainApp').classList.add('hidden');
+            showToast('Logged out successfully', 'info');
+        }
+
+        async function showResetConfirm() {
+            if (confirm('⚠️ WARNING: This will delete ALL local alert and history data!\n\nThis action cannot be undone. Are you sure?')) {
+                const data = await api('/api/client/reset', 'POST');
+                if (data && data.status === 'reset') {
+                    showNotification('Data Reset', 'All local data has been cleared', 'medium');
+                    await loadAllData();
+                } else {
+                    showNotification('Reset Failed', 'Could not reset data', 'critical');
+                }
+            }
+        }
+
+        function switchToTab(tabName) {
+            const tabButtons = document.querySelectorAll('.tab');
+            const sections = document.querySelectorAll('.section');
+            
+            tabButtons.forEach(t => t.classList.remove('active'));
+            sections.forEach(s => s.classList.add('hidden'));
+            
+            let targetTab;
+            if (tabName === 'alerts') targetTab = document.querySelector('.tab:first-child');
+            else if (tabName === 'history') targetTab = document.querySelectorAll('.tab')[1];
+            else targetTab = document.querySelectorAll('.tab')[2];
+            
+            if (targetTab) targetTab.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        }
+
+        async function updateServerStatus() {
+            try {
+                const response = await fetch('/api/client/status');
+                const data = await response.json();
+                const statusSpan = document.getElementById('serverStatus');
+                if (data.authenticated) {
+                    statusSpan.innerHTML = '<span class="status-badge status-connected"></span> Connected';
+                    statusSpan.style.color = '#22c55e';
+                } else {
+                    statusSpan.innerHTML = '<span class="status-badge status-offline"></span> Disconnected';
+                    statusSpan.style.color = '#ef4444';
+                }
+            } catch (error) {
+                document.getElementById('serverStatus').innerHTML = '<span class="status-badge status-offline"></span> Offline';
+            }
+        }
+
+        async function loadAllData() {
+            const now = new Date().toLocaleTimeString();
+            const [stats, alerts, history] = await Promise.all([
+                api('/api/client/stats'),
+                api('/api/client/alerts'),
+                api('/api/client/history')
+            ]);
+            
+            if (stats) {
+                document.getElementById('totalAlerts').textContent = stats.total_alerts || 0;
+                document.getElementById('totalChanges').textContent = stats.total_changes || 0;
+                document.getElementById('uniqueFiles').textContent = stats.unique_files || 0;
+                document.getElementById('unresolved').textContent = stats.unresolved || 0;
+            }
+            
+            if (alerts) {
+                await checkForNewAlerts(alerts);
+                displayAlerts(alerts);
+                document.getElementById('alertLastUpdate').innerHTML = `Last update: ${now}`;
+            }
+            
+            if (history) {
+                displayHistory(history);
+                document.getElementById('historyLastUpdate').innerHTML = `Last update: ${now}`;
+            }
+        }
+
+        function displayAlerts(data) {
+            const tbody = document.getElementById('alertsBody');
+            
+            if (data && data.alerts && data.alerts.length > 0) {
+                let html = '';
+                for (const alert of data.alerts.slice(0, 50)) {
+                    const severity = alert.severity || 'LOW';
+                    const severityClass = severity.toLowerCase();
+                    const fileName = (alert.file_path || '').split('/').pop().split('\\').pop() || 'Unknown';
+                    const time = (alert.alert_time || '').substring(0, 19);
+                    const risk = alert.risk_score ? Math.round(alert.risk_score * 100) + '%' : '-';
+                    const rowStyle = (alert.risk_score && alert.risk_score > 0.7) ? 'style="background: rgba(239,68,68,0.1)"' : '';
+                    
+                    html += `<tr ${rowStyle}>
+                        <td style="white-space:nowrap">${time}</td>
+                        <td>${(alert.alert_type || 'Unknown').substring(0, 30)}</td>
+                        <td><span class="badge badge-${severityClass}">${severity}</span></td>
+                        <td title="${alert.file_path || ''}">${fileName.substring(0, 35)}</td>
+                        <td>${risk}</td>
+                    </tr>`;
+                }
+                tbody.innerHTML = html;
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#64748b;">✅ No alerts found</td></tr>';
+            }
+        }
+
+        function displayHistory(data) {
+            const tbody = document.getElementById('historyBody');
+            
+            if (data && data.history && data.history.length > 0) {
+                let html = '';
+                for (const item of data.history.slice(0, 50)) {
+                    const fileName = (item.file_path || '').split('/').pop().split('\\').pop() || 'Unknown';
+                    const time = (item.event_time || '').substring(0, 19);
+                    const oldHash = (item.hash_before || 'N/A').substring(0, 16);
+                    const newHash = (item.hash_after || 'N/A').substring(0, 16);
+                    const changeType = item.change_type || '-';
+                    const rowStyle = (changeType === 'MODIFIED') ? 'style="background: rgba(245,158,11,0.05)"' : '';
+                    
+                    html += `<tr ${rowStyle}>
+                        <td style="white-space:nowrap">${time}</td>
+                        <td title="${item.file_path || ''}">${fileName.substring(0, 35)}</td>
+                        <td>${changeType}</td>
+                        <td class="hash-val">${oldHash}...</td>
+                        <td class="hash-val">${newHash}...</td>
+                    </tr>`;
+                }
+                tbody.innerHTML = html;
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#64748b;">📭 No history found</td></tr>';
+            }
+        }
+
+        async function checkHash() {
+            const filePath = document.getElementById('filePath').value;
+            const resultDiv = document.getElementById('hashResult');
+            
+            if (!filePath) {
+                resultDiv.innerHTML = '<span style="color:#ef4444">❌ Please enter a file path</span>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<span style="color:#f59e0b">⏳ Calculating hash...</span>';
+            
+            const data = await api('/api/client/file-hash?path=' + encodeURIComponent(filePath));
+            
+            if (data && !data.error) {
+                resultDiv.innerHTML = `
+                    <div style="color:#22c55e; margin-bottom:5px;">✅ File verified</div>
+                    <div style="margin-top:8px;"><strong>📁 Path:</strong> ${data.path}</div>
+                    <div style="margin-top:5px;"><strong>🔐 SHA-256:</strong> <span style="color:#3b82f6; word-break:break-all;">${data.hash}</span></div>
+                    <div style="margin-top:5px;"><strong>📦 Size:</strong> ${(data.size / 1024).toFixed(2)} KB</div>
+                `;
+                showNotification('Hash Calculated', `Hash for ${data.path.split('/').pop()} is ready`, 'low');
+            } else if (data && data.error) {
+                resultDiv.innerHTML = `<span style="color:#ef4444">❌ ${data.error}</span>`;
+            } else {
+                resultDiv.innerHTML = '<span style="color:#ef4444">❌ Failed to calculate hash</span>';
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+        }
+
+        async function checkExistingSession() {
+            try {
+                const response = await fetch('/api/client/status');
+                const data = await response.json();
+                if (data.authenticated) {
+                    const cookieMatch = document.cookie.match(/client_token=([^;]+)/);
+                    clientToken = cookieMatch ? cookieMatch[1] : '';
+                    if (clientToken) {
+                        document.getElementById('loginOverlay').style.display = 'none';
+                        document.getElementById('mainApp').classList.remove('hidden');
+                        await loadAllData();
+                        refreshInterval = setInterval(loadAllData, 5000);
+                        updateServerStatus();
+                        setInterval(updateServerStatus, 10000);
+                        showNotification('Session Restored', 'Welcome back!', 'low');
+                    }
+                }
+            } catch (error) {
+                console.log('No existing session');
+            }
+        }
+
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') doLogin();
+        });
+
+        checkExistingSession();
+    </script>
+</body>
+</html>
