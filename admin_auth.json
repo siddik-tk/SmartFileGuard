@@ -1,0 +1,9 @@
+{
+    "admin": {
+        "ph": "2391d39686a216eea5182436b2af82654dd11ad1e4242a931e4eb5b0183d97da",
+        "salt": "f6c949db5f6f3471733e1eb86d680369",
+        "role": "admin",
+        "email": "",
+        "alert_enabled": false
+    }
+}
